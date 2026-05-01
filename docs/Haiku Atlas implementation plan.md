@@ -5,7 +5,7 @@ This document keeps the operational plan separate from the spec/seed.
 ## 1. Base Decisions
 
 - [x] Confirm v0 stack: Python 3.10+, SQLite, CLI-first, decoupled UI.
-- [x] Confirm v0 scope: heuristic parser, incremental index, name search.
+- [x] Confirm v0 scope: heuristic parser, incremental index, name search, local web UI.
 - [x] Define input policy: installed SDK, full source tree, or both.
 - [x] Lock project name and binary names (atlas-indexer, atlas).
 
@@ -62,11 +62,11 @@ This document keeps the operational plan separate from the spec/seed.
 
 ## 7. Week 6 - v0 Release
 
-- [ ] Freeze SQLite index format v0.
-- [ ] Write usage guide for SDK mode and source tree mode.
+- [x] Freeze SQLite index format v0.
+- [x] Write usage guide for SDK mode and source tree mode.
 - [ ] Generate binaries/packages for Linux and Windows.
-- [ ] Run end-to-end smoke test in a clean environment.
-- [ ] Publish changelog and v1 roadmap.
+- [x] Run end-to-end smoke test in a clean environment.
+- [x] Publish changelog and v1 roadmap.
 
 ## 8. Definition of Done (v0)
 
@@ -85,7 +85,7 @@ This document keeps the operational plan separate from the spec/seed.
 
 ## 10. Performance Baseline
 
-Measured on 2026-05-01 against `/home/mario/Dev/haiku`.
+Measured on 2026-05-01 against a local Haiku source checkout.
 
 full index          2627 headers    2.86s real
 incremental clean   2627 headers    0.12s real
