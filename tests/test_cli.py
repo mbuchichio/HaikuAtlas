@@ -95,6 +95,21 @@ class CliTests(unittest.TestCase):
             self.assertIn("scanned=1", output.getvalue())
             self.assertIn("new=1", output.getvalue())
 
+    def test_indexer_verbose_prints_changed_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "headers"
+            source.mkdir()
+            (source / "View.h").write_text("class BView {};", encoding="utf-8")
+            output = StringIO()
+
+            with redirect_stdout(output):
+                result = indexer_main(["--db", str(db_path), "--verbose", str(source)])
+
+            self.assertEqual(0, result)
+            self.assertIn("new\n  View.h", output.getvalue())
+
     def test_indexer_sdk_option_scans_header_root(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -316,6 +331,35 @@ class CliTests(unittest.TestCase):
             self.assertIn("2 symbols", output.getvalue())
             self.assertIn("class\tBView\tos/interface/View.h:2", output.getvalue())
             self.assertNotIn("BView::Draw", output.getvalue())
+
+    def test_query_kit_lists_public_symbols_before_private_symbols(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "headers"
+            (source / "os" / "interface").mkdir(parents=True)
+            (source / "private" / "interface").mkdir(parents=True)
+            (source / "private" / "interface" / "PrivateView.h").write_text(
+                "class APrivateView {};",
+                encoding="utf-8",
+            )
+            (source / "os" / "interface" / "View.h").write_text(
+                "class ZPublicView {};",
+                encoding="utf-8",
+            )
+
+            with redirect_stdout(StringIO()):
+                indexer_main(["--db", str(db_path), "--incremental", str(source)])
+
+            output = StringIO()
+            with redirect_stdout(output):
+                result = query_main(["--db", str(db_path), "kit", "interface"])
+
+            self.assertEqual(0, result)
+            self.assertLess(
+                output.getvalue().index("ZPublicView"),
+                output.getvalue().index("APrivateView"),
+            )
 
     def test_query_kit_reports_hidden_top_level_symbols(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

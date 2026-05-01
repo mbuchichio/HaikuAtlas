@@ -4,6 +4,7 @@ import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from haiku_atlas.db import initialize_database
 from haiku_atlas.file_index import scan_header_files, update_file_index
@@ -65,6 +66,31 @@ class FileIndexTests(unittest.TestCase):
             self.assertEqual(str(source), settings["source_path"])
             self.assertEqual("1", settings["header_count"])
             self.assertIn("last_indexed_at", settings)
+
+    def test_update_file_index_keeps_running_after_parser_error(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "source"
+            source.mkdir()
+            (source / "Broken.h").write_text("BROKEN", encoding="utf-8")
+            (source / "View.h").write_text("class BView {};", encoding="utf-8")
+
+            def parse_or_raise(source_text: str):
+                if "BROKEN" in source_text:
+                    raise ValueError("parser failed")
+                return []
+
+            initialize_database(db_path)
+            with sqlite3.connect(db_path) as connection:
+                with patch("haiku_atlas.file_index.parse_header_symbols", parse_or_raise):
+                    result = update_file_index(connection, source)
+                files = connection.execute("SELECT path FROM files ORDER BY path").fetchall()
+
+            self.assertEqual(["Broken.h", "View.h"], list(result.new))
+            self.assertEqual("Broken.h", result.errors[0].path)
+            self.assertEqual("parser failed", result.errors[0].message)
+            self.assertEqual([("View.h",)], files)
 
     def test_full_index_rebuilds_existing_headers(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

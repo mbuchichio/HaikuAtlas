@@ -154,7 +154,14 @@ def list_kit_symbols(
         WHERE symbols.kit_id = ?
           AND symbols.parent_id IS NULL
           AND symbols.kind IN ('class', 'struct', 'enum')
-        ORDER BY symbols.kind, symbols.qualified_name
+        ORDER BY
+            CASE
+                WHEN files.path LIKE 'os/%' THEN 0
+                WHEN files.path LIKE 'private/%' THEN 1
+                ELSE 2
+            END,
+            symbols.kind,
+            symbols.qualified_name
         LIMIT ?
         """,
         (kit_id, limit),

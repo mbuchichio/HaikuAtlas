@@ -26,6 +26,13 @@ class FileIndexResult:
     changed: tuple[str, ...]
     deleted: tuple[str, ...]
     unchanged: tuple[str, ...]
+    errors: tuple["FileIndexError", ...] = ()
+
+
+@dataclass(frozen=True)
+class FileIndexError:
+    path: str
+    message: str
 
 
 def scan_header_files(source_root: Path) -> list[HeaderFile]:
@@ -75,6 +82,7 @@ def update_file_index(
     new: list[str] = []
     changed: list[str] = []
     unchanged: list[str] = []
+    errors: list[FileIndexError] = []
 
     for header in headers:
         existing = existing_by_path.get(header.path)
@@ -112,8 +120,18 @@ def update_file_index(
 
         _delete_file_symbols(connection, file_id)
         kit_id = _ensure_kit(connection, infer_kit_name(header.path))
-        header_source = (source_root / header.path).read_text(encoding="utf-8", errors="replace")
-        for symbol in parse_header_symbols(header_source):
+        try:
+            header_source = (source_root / header.path).read_text(
+                encoding="utf-8",
+                errors="replace",
+            )
+            symbols = parse_header_symbols(header_source)
+        except Exception as error:
+            errors.append(FileIndexError(path=header.path, message=str(error)))
+            connection.execute("DELETE FROM files WHERE id = ?", (file_id,))
+            continue
+
+        for symbol in symbols:
             _insert_symbol(connection, file_id, header.path, symbol, kit_id)
 
     _set_setting(connection, "source_path", str(source_root))
@@ -126,6 +144,7 @@ def update_file_index(
         changed=tuple(changed),
         deleted=tuple(deleted),
         unchanged=tuple(unchanged),
+        errors=tuple(errors),
     )
 
 

@@ -39,8 +39,8 @@ This document keeps the operational plan separate from the spec/seed.
 
 ## 5. Week 4 - Quality and DX
 
-- [ ] Add configurable logging (--verbose) for the indexer.
-- [ ] Add error handling and soft parser failures (raw declaration).
+- [x] Add configurable logging (--verbose) for the indexer.
+- [x] Add error handling and soft parser failures (raw declaration).
 - [ ] Cover edge cases: macros, multiline signatures, incomplete headers.
 - [ ] Add regression tests with real Haiku API fixtures.
 - [ ] Measure baseline performance (full and incremental index time).
