@@ -58,7 +58,10 @@ and show basic symbol details.
 ## Project Notes
 
 - [CLI reference](docs/cli-reference)
-- [Cross-platform validation](docs/cross-platform-validation.md)
+- [Usage guide](docs/usage-guide.md)
+- [Index format v0](docs/index-format-v0.md)
+- [Changelog](docs/changelog.md)
+- [v1 roadmap](docs/v1-roadmap.md)
 - [Spec / seed](docs/Haiku%20Atlas%20seed.md)
 - [Implementation plan](docs/Haiku%20Atlas%20implementation%20plan.md)
 
