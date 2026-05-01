@@ -225,6 +225,27 @@ class CliTests(unittest.TestCase):
             self.assertIn("View.h:1", output.getvalue())
             self.assertIn("inherits BHandler", output.getvalue())
 
+    def test_query_status_prints_index_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "headers"
+            source.mkdir()
+            (source / "View.h").write_text("class BView {};", encoding="utf-8")
+
+            with redirect_stdout(StringIO()):
+                indexer_main(["--db", str(db_path), str(source)])
+
+            output = StringIO()
+            with redirect_stdout(output):
+                result = query_main(["--db", str(db_path), "status"])
+
+            self.assertEqual(0, result)
+            self.assertIn(f"database\t{db_path}", output.getvalue())
+            self.assertIn(f"source\t{source}", output.getvalue())
+            self.assertIn("headers\t1", output.getvalue())
+            self.assertIn("symbols\t1", output.getvalue())
+
     def test_query_show_prints_kit(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

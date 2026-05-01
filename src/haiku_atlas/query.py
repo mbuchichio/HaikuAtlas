@@ -53,6 +53,35 @@ class KitSymbol:
     line_start: int | None
 
 
+@dataclass(frozen=True)
+class IndexStatus:
+    source_path: str | None
+    last_indexed_at: str | None
+    header_count: int
+    kit_count: int
+    symbol_count: int
+    database_path: str | None = None
+
+
+def get_index_status(connection: sqlite3.Connection) -> IndexStatus:
+    settings = dict(connection.execute("SELECT key, value FROM settings").fetchall())
+    header_count = _count_rows(connection, "files")
+    kit_count = _count_rows(connection, "kits")
+    symbol_count = _count_rows(connection, "symbols")
+    return IndexStatus(
+        source_path=settings.get("source_path"),
+        last_indexed_at=settings.get("last_indexed_at"),
+        header_count=header_count,
+        kit_count=kit_count,
+        symbol_count=symbol_count,
+    )
+
+
+def _count_rows(connection: sqlite3.Connection, table_name: str) -> int:
+    row = connection.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()
+    return int(row[0])
+
+
 def list_kits(connection: sqlite3.Connection) -> list[KitSummary]:
     rows = connection.execute(
         """

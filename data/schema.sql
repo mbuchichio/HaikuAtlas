@@ -7,6 +7,11 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 
 INSERT OR IGNORE INTO schema_migrations (version) VALUES (1);
 
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS files (
     id INTEGER PRIMARY KEY,
     path TEXT NOT NULL UNIQUE,
@@ -61,4 +66,3 @@ CREATE TABLE IF NOT EXISTS docs (
     body TEXT NOT NULL,
     UNIQUE (symbol_id, source)
 );
-

@@ -24,11 +24,10 @@ class DatabaseTests(unittest.TestCase):
                 }
 
         self.assertLessEqual(
-            {"files", "kits", "symbols", "relations", "docs", "schema_migrations"},
+            {"files", "kits", "symbols", "relations", "docs", "settings", "schema_migrations"},
             tables,
         )
 
 
 if __name__ == "__main__":
     unittest.main()
-

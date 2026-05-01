@@ -116,6 +116,10 @@ def update_file_index(
         for symbol in parse_header_symbols(header_source):
             _insert_symbol(connection, file_id, header.path, symbol, kit_id)
 
+    _set_setting(connection, "source_path", str(source_root))
+    _set_setting(connection, "last_indexed_at", _current_timestamp(connection))
+    _set_setting(connection, "header_count", str(len(headers)))
+
     return FileIndexResult(
         scanned=len(headers),
         new=tuple(new),
@@ -123,6 +127,23 @@ def update_file_index(
         deleted=tuple(deleted),
         unchanged=tuple(unchanged),
     )
+
+
+def _set_setting(connection: sqlite3.Connection, key: str, value: str) -> None:
+    connection.execute(
+        """
+        INSERT INTO settings (key, value)
+        VALUES (?, ?)
+        ON CONFLICT(key) DO UPDATE SET
+            value = excluded.value
+        """,
+        (key, value),
+    )
+
+
+def _current_timestamp(connection: sqlite3.Connection) -> str:
+    row = connection.execute("SELECT CURRENT_TIMESTAMP").fetchone()
+    return str(row[0])
 
 
 def _get_file_id(connection: sqlite3.Connection, path: str) -> int | None:

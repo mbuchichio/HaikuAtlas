@@ -5,6 +5,7 @@ Haiku Atlas
 
     ./atlas search NAME               find symbols
     ./atlas show NAME                 show one symbol
+    ./atlas status                    show index status
     ./atlas kits                      list kits
     ./atlas kit NAME                  list symbols in one kit
     ./atlas dump-symbols              print all symbols

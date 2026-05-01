@@ -49,6 +49,23 @@ class FileIndexTests(unittest.TestCase):
             self.assertEqual(("View.h",), third.changed)
             self.assertEqual(("View.h",), fourth.deleted)
 
+    def test_update_file_index_stores_index_settings(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "source"
+            source.mkdir()
+            (source / "View.h").write_text("class BView {};", encoding="utf-8")
+
+            initialize_database(db_path)
+            with sqlite3.connect(db_path) as connection:
+                update_file_index(connection, source)
+                settings = dict(connection.execute("SELECT key, value FROM settings").fetchall())
+
+            self.assertEqual(str(source), settings["source_path"])
+            self.assertEqual("1", settings["header_count"])
+            self.assertIn("last_indexed_at", settings)
+
     def test_full_index_rebuilds_existing_headers(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

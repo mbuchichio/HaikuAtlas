@@ -8,7 +8,13 @@ from pathlib import Path
 
 from haiku_atlas.cli.help import read_cli_reference
 from haiku_atlas.db import DEFAULT_DB_PATH, initialize_database
-from haiku_atlas.query import get_symbol_page, list_kit_symbols, list_kits, search_symbols
+from haiku_atlas.query import (
+    get_index_status,
+    get_symbol_page,
+    list_kit_symbols,
+    list_kits,
+    search_symbols,
+)
 
 MAX_METHODS_SHOWN = 40
 MAX_KIT_SYMBOLS_SHOWN = 80
@@ -31,6 +37,7 @@ def build_parser() -> argparse.ArgumentParser:
     show = subparsers.add_parser("show", help="Show one indexed symbol.")
     show.add_argument("name", help="Symbol name to display.")
 
+    subparsers.add_parser("status", help="Show index status.")
     subparsers.add_parser("kits", help="List indexed kits.")
 
     kit = subparsers.add_parser("kit", help="List top-level symbols in one kit.")
@@ -102,6 +109,19 @@ def main(argv: list[str] | None = None) -> int:
             print("relations")
             for relation_type, target in page.other_relations:
                 print(f"  {relation_type}: {target}")
+        return 0
+
+    if args.command == "status":
+        with sqlite3.connect(args.db) as connection:
+            status = get_index_status(connection)
+        print(f"database\t{args.db}")
+        if status.source_path:
+            print(f"source\t{status.source_path}")
+        if status.last_indexed_at:
+            print(f"indexed\t{status.last_indexed_at}")
+        print(f"headers\t{status.header_count}")
+        print(f"kits\t{status.kit_count}")
+        print(f"symbols\t{status.symbol_count}")
         return 0
 
     if args.command == "kits":
