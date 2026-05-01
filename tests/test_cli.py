@@ -19,7 +19,7 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(0, result)
         self.assertIn("Haiku Atlas", output.getvalue())
-        self.assertIn("    atlas-indexer SOURCE              build/update the index", output.getvalue())
+        self.assertIn("    ./atlas-indexer SOURCE            build/update the index", output.getvalue())
 
     def test_query_help_prints_cli_reference(self) -> None:
         output = StringIO()
@@ -29,7 +29,7 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(0, result)
         self.assertIn("Haiku Atlas", output.getvalue())
-        self.assertIn("    atlas search NAME                 find symbols", output.getvalue())
+        self.assertIn("    ./atlas search NAME               find symbols", output.getvalue())
 
     def test_indexer_bootstrap_initializes_database(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -66,6 +66,18 @@ class CliTests(unittest.TestCase):
 
                 self.assertEqual(0, result)
                 self.assertEqual("", output.getvalue())
+
+    def test_query_kits_explains_empty_index(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            db_path = Path(directory) / "atlas.sqlite3"
+            output = StringIO()
+
+            with redirect_stdout(output):
+                result = query_main(["--db", str(db_path), "kits"])
+
+            self.assertEqual(0, result)
+            self.assertIn("no kits indexed", output.getvalue())
+            self.assertIn("./atlas-indexer /path/to/haiku", output.getvalue())
 
     def test_indexer_incremental_scans_source_headers(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -233,6 +245,89 @@ class CliTests(unittest.TestCase):
 
             self.assertEqual(0, result)
             self.assertIn("Interface Kit", output.getvalue())
+
+    def test_query_kits_lists_indexed_kits(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "headers"
+            (source / "os" / "interface").mkdir(parents=True)
+            (source / "os" / "interface" / "View.h").write_text(
+                "class BView {};",
+                encoding="utf-8",
+            )
+
+            with redirect_stdout(StringIO()):
+                indexer_main(["--db", str(db_path), "--incremental", str(source)])
+
+            output = StringIO()
+            with redirect_stdout(output):
+                result = query_main(["--db", str(db_path), "kits"])
+
+            self.assertEqual(0, result)
+            self.assertIn("interface\tInterface Kit\t1", output.getvalue())
+
+    def test_query_kit_lists_top_level_symbols_in_kit(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "headers"
+            (source / "os" / "interface").mkdir(parents=True)
+            (source / "os" / "interface" / "View.h").write_text(
+                """
+                class BView {
+                public:
+                    void Draw();
+                };
+                """,
+                encoding="utf-8",
+            )
+
+            with redirect_stdout(StringIO()):
+                indexer_main(["--db", str(db_path), "--incremental", str(source)])
+
+            output = StringIO()
+            with redirect_stdout(output):
+                result = query_main(["--db", str(db_path), "kit", "interface"])
+
+            self.assertEqual(0, result)
+            self.assertIn("Interface Kit", output.getvalue())
+            self.assertIn("2 symbols", output.getvalue())
+            self.assertIn("class\tBView\tos/interface/View.h:2", output.getvalue())
+            self.assertNotIn("BView::Draw", output.getvalue())
+
+    def test_query_kit_reports_hidden_top_level_symbols(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "headers" / "os" / "interface"
+            source.mkdir(parents=True)
+            for index in range(85):
+                (source / f"Class{index}.h").write_text(
+                    f"class BClass{index} {{}};",
+                    encoding="utf-8",
+                )
+
+            with redirect_stdout(StringIO()):
+                indexer_main(["--db", str(db_path), "--incremental", str(root / "headers")])
+
+            output = StringIO()
+            with redirect_stdout(output):
+                result = query_main(["--db", str(db_path), "kit", "interface"])
+
+            self.assertEqual(0, result)
+            self.assertIn("... 5 more", output.getvalue())
+
+    def test_query_kit_returns_error_for_missing_kit(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            db_path = Path(directory) / "atlas.sqlite3"
+            output = StringIO()
+
+            with redirect_stdout(output):
+                result = query_main(["--db", str(db_path), "kit", "interface"])
+
+            self.assertEqual(1, result)
+            self.assertIn("kit not found", output.getvalue())
 
     def test_query_search_and_show_include_public_methods(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

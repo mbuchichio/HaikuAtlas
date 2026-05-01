@@ -14,30 +14,26 @@ separate UI.
 From the repository root:
 
 ```sh
-python3 -m venv .venv
-. .venv/bin/activate
-python -m pip install -e .
-atlas-indexer /boot/system/develop/headers
-atlas search BView
+./atlas-indexer /boot/system/develop/headers
+./atlas search BView
 ```
 
-On Haiku, use the Python command that exists on your system. For example:
+For a Haiku source checkout on Linux:
 
 ```sh
-python3.10 -m venv .venv
-. .venv/bin/activate
-python -m pip install -e .
+./atlas-indexer ~/src/haiku
+./atlas show BView
 ```
 
 ## Current Commands
 
-- `atlas-indexer SOURCE`
-- `atlas-indexer --full SOURCE`
-- `atlas search NAME`
-- `atlas show NAME`
-- `atlas help`
-- `atlas dump-symbols`
-- `atlas dump-kits`
+- `./atlas-indexer SOURCE`
+- `./atlas-indexer --full SOURCE`
+- `./atlas search NAME`
+- `./atlas show NAME`
+- `./atlas help`
+- `./atlas dump-symbols`
+- `./atlas dump-kits`
 
 The indexer currently scans `.h` and `.hpp` files, stores file metadata,
 detects new, changed, deleted, and unchanged files, and extracts simple

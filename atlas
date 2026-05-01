@@ -1,0 +1,2 @@
+#!/usr/bin/env sh
+PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}src" exec python3 -m haiku_atlas.cli.query "$@"

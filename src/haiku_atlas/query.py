@@ -16,6 +16,14 @@ class SearchResult:
 
 
 @dataclass(frozen=True)
+class KitSummary:
+    name: str
+    display_name: str
+    symbol_count: int
+    top_level_symbol_count: int = 0
+
+
+@dataclass(frozen=True)
 class SymbolDetail:
     kind: str
     name: str
@@ -35,6 +43,111 @@ class SymbolPage:
     inherits: tuple[str, ...]
     methods: tuple[str, ...]
     other_relations: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True)
+class KitSymbol:
+    kind: str
+    qualified_name: str
+    file_path: str | None
+    line_start: int | None
+
+
+def list_kits(connection: sqlite3.Connection) -> list[KitSummary]:
+    rows = connection.execute(
+        """
+        SELECT
+            kits.name,
+            kits.display_name,
+            COUNT(symbols.id) AS symbol_count,
+            SUM(
+                CASE
+                    WHEN symbols.parent_id IS NULL
+                     AND symbols.kind IN ('class', 'struct', 'enum')
+                    THEN 1
+                    ELSE 0
+                END
+            ) AS top_level_symbol_count
+        FROM kits
+        LEFT JOIN symbols ON symbols.kit_id = kits.id
+        GROUP BY kits.id
+        ORDER BY kits.display_name
+        """
+    ).fetchall()
+    return [
+        KitSummary(
+            name=name,
+            display_name=display_name,
+            symbol_count=symbol_count,
+            top_level_symbol_count=top_level_symbol_count or 0,
+        )
+        for name, display_name, symbol_count, top_level_symbol_count in rows
+    ]
+
+
+def list_kit_symbols(
+    connection: sqlite3.Connection,
+    kit_name: str,
+    *,
+    limit: int = 80,
+) -> tuple[KitSummary, tuple[KitSymbol, ...]] | None:
+    kit_row = connection.execute(
+        """
+        SELECT
+            kits.id,
+            kits.name,
+            kits.display_name,
+            COUNT(symbols.id) AS symbol_count,
+            SUM(
+                CASE
+                    WHEN symbols.parent_id IS NULL
+                     AND symbols.kind IN ('class', 'struct', 'enum')
+                    THEN 1
+                    ELSE 0
+                END
+            ) AS top_level_symbol_count
+        FROM kits
+        LEFT JOIN symbols ON symbols.kit_id = kits.id
+        WHERE kits.name = ? OR kits.display_name = ?
+        GROUP BY kits.id
+        """,
+        (kit_name, kit_name),
+    ).fetchone()
+    if kit_row is None:
+        return None
+
+    kit_id, name, display_name, symbol_count, top_level_symbol_count = kit_row
+    rows = connection.execute(
+        """
+        SELECT symbols.kind, symbols.qualified_name, files.path, symbols.line_start
+        FROM symbols
+        LEFT JOIN files ON files.id = symbols.file_id
+        WHERE symbols.kit_id = ?
+          AND symbols.parent_id IS NULL
+          AND symbols.kind IN ('class', 'struct', 'enum')
+        ORDER BY symbols.kind, symbols.qualified_name
+        LIMIT ?
+        """,
+        (kit_id, limit),
+    ).fetchall()
+    symbols = tuple(
+        KitSymbol(
+            kind=kind,
+            qualified_name=qualified_name,
+            file_path=file_path,
+            line_start=line_start,
+        )
+        for kind, qualified_name, file_path, line_start in rows
+    )
+    return (
+        KitSummary(
+            name=name,
+            display_name=display_name,
+            symbol_count=symbol_count,
+            top_level_symbol_count=top_level_symbol_count or 0,
+        ),
+        symbols,
+    )
 
 
 def search_symbols(connection: sqlite3.Connection, term: str, *, limit: int = 20) -> list[SearchResult]:

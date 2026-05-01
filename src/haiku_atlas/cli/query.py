@@ -8,9 +8,10 @@ from pathlib import Path
 
 from haiku_atlas.cli.help import read_cli_reference
 from haiku_atlas.db import DEFAULT_DB_PATH, initialize_database
-from haiku_atlas.query import get_symbol_page, search_symbols
+from haiku_atlas.query import get_symbol_page, list_kit_symbols, list_kits, search_symbols
 
 MAX_METHODS_SHOWN = 40
+MAX_KIT_SYMBOLS_SHOWN = 80
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -29,6 +30,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     show = subparsers.add_parser("show", help="Show one indexed symbol.")
     show.add_argument("name", help="Symbol name to display.")
+
+    subparsers.add_parser("kits", help="List indexed kits.")
+
+    kit = subparsers.add_parser("kit", help="List top-level symbols in one kit.")
+    kit.add_argument("name", help="Kit name, such as interface or 'Interface Kit'.")
 
     subparsers.add_parser("help", help="Print the long Haiku Atlas CLI reference.")
     subparsers.add_parser("dump-symbols", help="Print all indexed symbols.")
@@ -96,6 +102,41 @@ def main(argv: list[str] | None = None) -> int:
             print("relations")
             for relation_type, target in page.other_relations:
                 print(f"  {relation_type}: {target}")
+        return 0
+
+    if args.command == "kits":
+        with sqlite3.connect(args.db) as connection:
+            kits = list_kits(connection)
+        if not kits:
+            print("no kits indexed")
+            print("run: ./atlas-indexer /path/to/haiku")
+            return 0
+        for kit in kits:
+            print(f"{kit.name}\t{kit.display_name}\t{kit.symbol_count}")
+        return 0
+
+    if args.command == "kit":
+        with sqlite3.connect(args.db) as connection:
+            result = list_kit_symbols(connection, args.name, limit=MAX_KIT_SYMBOLS_SHOWN)
+        if result is None:
+            print(f"atlas: kit not found: {args.name}")
+            return 1
+
+        kit, symbols = result
+        print(kit.display_name)
+        print(f"{kit.symbol_count} symbols")
+        if symbols:
+            print("")
+            for symbol in symbols:
+                location = ""
+                if symbol.file_path:
+                    location = f"\t{symbol.file_path}"
+                    if symbol.line_start is not None:
+                        location += f":{symbol.line_start}"
+                print(f"{symbol.kind}\t{symbol.qualified_name}{location}")
+            hidden_symbols = kit.top_level_symbol_count - len(symbols)
+            if hidden_symbols > 0:
+                print(f"... {hidden_symbols} more")
         return 0
 
     if args.command == "dump-symbols":
