@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from html import escape
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from contextlib import closing
 from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlparse
 import sqlite3
@@ -51,7 +52,7 @@ def _make_handler(db_path: Path) -> type[BaseHTTPRequestHandler]:
         def do_GET(self) -> None:
             parsed = urlparse(self.path)
             try:
-                with sqlite3.connect(db_path) as connection:
+                with closing(sqlite3.connect(db_path)) as connection:
                     status_code, body = _route(connection, parsed.path, parse_qs(parsed.query))
             except Exception as error:
                 status_code = 500

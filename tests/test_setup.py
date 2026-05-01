@@ -3,7 +3,7 @@ from __future__ import annotations
 import sqlite3
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import closing, redirect_stdout
 from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
@@ -39,7 +39,7 @@ class SetupTests(unittest.TestCase):
 
             self.assertEqual(0, result)
             clone.assert_not_called()
-            with sqlite3.connect(db_path) as connection:
+            with closing(sqlite3.connect(db_path)) as connection:
                 settings = dict(connection.execute("SELECT key, value FROM settings").fetchall())
 
             self.assertEqual(str(headers), settings["source_path"])

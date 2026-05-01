@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import sqlite3
 import sys
+from contextlib import closing
 from pathlib import Path
 
 from haiku_atlas.cli.help import read_cli_reference
@@ -76,7 +77,7 @@ def main(argv: list[str] | None = None) -> int:
     initialize_database(args.db)
 
     if args.command == "search":
-        with sqlite3.connect(args.db) as connection:
+        with closing(sqlite3.connect(args.db)) as connection:
             results = search_symbols(connection, args.term)
         for result in results:
             location = ""
@@ -89,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "show":
-        with sqlite3.connect(args.db) as connection:
+        with closing(sqlite3.connect(args.db)) as connection:
             page = get_symbol_page(connection, args.name)
         if page is None:
             print(f"atlas: symbol not found: {args.name}")
@@ -128,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "status":
-        with sqlite3.connect(args.db) as connection:
+        with closing(sqlite3.connect(args.db)) as connection:
             status = get_index_status(connection)
         print(f"database\t{args.db}")
         if status.source_path:
@@ -141,7 +142,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "kits":
-        with sqlite3.connect(args.db) as connection:
+        with closing(sqlite3.connect(args.db)) as connection:
             kits = list_kits(connection)
         if not kits:
             print("no kits indexed")
@@ -152,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "kit":
-        with sqlite3.connect(args.db) as connection:
+        with closing(sqlite3.connect(args.db)) as connection:
             result = list_kit_symbols(connection, args.name, limit=MAX_KIT_SYMBOLS_SHOWN)
         if result is None:
             print(f"atlas: kit not found: {args.name}")
@@ -190,19 +191,19 @@ def main(argv: list[str] | None = None) -> int:
         return result
 
     if args.command == "dump-symbols":
-        with sqlite3.connect(args.db) as connection:
+        with closing(sqlite3.connect(args.db)) as connection:
             rows = connection.execute(
                 "SELECT kind, qualified_name FROM symbols ORDER BY qualified_name"
-            )
-            for kind, qualified_name in rows:
-                print(f"{kind}\t{qualified_name}")
+            ).fetchall()
+        for kind, qualified_name in rows:
+            print(f"{kind}\t{qualified_name}")
         return 0
 
     if args.command == "dump-kits":
-        with sqlite3.connect(args.db) as connection:
-            rows = connection.execute("SELECT name, display_name FROM kits ORDER BY name")
-            for name, display_name in rows:
-                print(f"{name}\t{display_name}")
+        with closing(sqlite3.connect(args.db)) as connection:
+            rows = connection.execute("SELECT name, display_name FROM kits ORDER BY name").fetchall()
+        for name, display_name in rows:
+            print(f"{name}\t{display_name}")
         return 0
 
     raise AssertionError(f"Unhandled command: {args.command}")

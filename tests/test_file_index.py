@@ -3,6 +3,7 @@ from __future__ import annotations
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
 
@@ -35,15 +36,16 @@ class FileIndexTests(unittest.TestCase):
             header.write_text("class BView {};", encoding="utf-8")
 
             initialize_database(db_path)
-            with sqlite3.connect(db_path) as connection:
-                first = update_file_index(connection, source)
-                second = update_file_index(connection, source)
+            with closing(sqlite3.connect(db_path)) as connection:
+                with connection:
+                    first = update_file_index(connection, source)
+                    second = update_file_index(connection, source)
 
-                header.write_text("class BView { void Draw(); };", encoding="utf-8")
-                third = update_file_index(connection, source)
+                    header.write_text("class BView { void Draw(); };", encoding="utf-8")
+                    third = update_file_index(connection, source)
 
-                header.unlink()
-                fourth = update_file_index(connection, source)
+                    header.unlink()
+                    fourth = update_file_index(connection, source)
 
             self.assertEqual(("View.h",), first.new)
             self.assertEqual(("View.h",), second.unchanged)
@@ -59,8 +61,9 @@ class FileIndexTests(unittest.TestCase):
             (source / "View.h").write_text("class BView {};", encoding="utf-8")
 
             initialize_database(db_path)
-            with sqlite3.connect(db_path) as connection:
-                update_file_index(connection, source)
+            with closing(sqlite3.connect(db_path)) as connection:
+                with connection:
+                    update_file_index(connection, source)
                 settings = dict(connection.execute("SELECT key, value FROM settings").fetchall())
 
             self.assertEqual(str(source), settings["source_path"])
@@ -82,9 +85,10 @@ class FileIndexTests(unittest.TestCase):
                 return []
 
             initialize_database(db_path)
-            with sqlite3.connect(db_path) as connection:
-                with patch("haiku_atlas.file_index.parse_header_symbols", parse_or_raise):
-                    result = update_file_index(connection, source)
+            with closing(sqlite3.connect(db_path)) as connection:
+                with connection:
+                    with patch("haiku_atlas.file_index.parse_header_symbols", parse_or_raise):
+                        result = update_file_index(connection, source)
                 files = connection.execute("SELECT path FROM files ORDER BY path").fetchall()
 
             self.assertEqual(["Broken.h", "View.h"], list(result.new))
@@ -101,9 +105,10 @@ class FileIndexTests(unittest.TestCase):
             (source / "View.h").write_text("class BView {};", encoding="utf-8")
 
             initialize_database(db_path)
-            with sqlite3.connect(db_path) as connection:
-                update_file_index(connection, source)
-                result = update_file_index(connection, source, full=True)
+            with closing(sqlite3.connect(db_path)) as connection:
+                with connection:
+                    update_file_index(connection, source)
+                    result = update_file_index(connection, source, full=True)
 
             self.assertEqual(("View.h",), result.new)
 
@@ -128,8 +133,9 @@ class FileIndexTests(unittest.TestCase):
             )
 
             initialize_database(db_path)
-            with sqlite3.connect(db_path) as connection:
-                update_file_index(connection, source)
+            with closing(sqlite3.connect(db_path)) as connection:
+                with connection:
+                    update_file_index(connection, source)
                 symbols = connection.execute(
                     "SELECT kind, name FROM symbols ORDER BY kind, name"
                 ).fetchall()
@@ -156,8 +162,9 @@ class FileIndexTests(unittest.TestCase):
             )
 
             initialize_database(db_path)
-            with sqlite3.connect(db_path) as connection:
-                update_file_index(connection, source)
+            with closing(sqlite3.connect(db_path)) as connection:
+                with connection:
+                    update_file_index(connection, source)
                 rows = connection.execute(
                     """
                     SELECT symbols.qualified_name, kits.name, kits.display_name
@@ -188,8 +195,9 @@ class FileIndexTests(unittest.TestCase):
             )
 
             initialize_database(db_path)
-            with sqlite3.connect(db_path) as connection:
-                update_file_index(connection, source)
+            with closing(sqlite3.connect(db_path)) as connection:
+                with connection:
+                    update_file_index(connection, source)
                 symbols = connection.execute(
                     """
                     SELECT child.kind, child.qualified_name, parent.qualified_name
@@ -238,8 +246,9 @@ class FileIndexTests(unittest.TestCase):
             )
 
             initialize_database(db_path)
-            with sqlite3.connect(db_path) as connection:
-                update_file_index(connection, source)
+            with closing(sqlite3.connect(db_path)) as connection:
+                with connection:
+                    update_file_index(connection, source)
                 docs = connection.execute(
                     """
                     SELECT docs.source, docs.body
@@ -261,10 +270,11 @@ class FileIndexTests(unittest.TestCase):
             header.write_text("class BView {};", encoding="utf-8")
 
             initialize_database(db_path)
-            with sqlite3.connect(db_path) as connection:
-                update_file_index(connection, source)
-                header.unlink()
-                update_file_index(connection, source)
+            with closing(sqlite3.connect(db_path)) as connection:
+                with connection:
+                    update_file_index(connection, source)
+                    header.unlink()
+                    update_file_index(connection, source)
                 count = connection.execute("SELECT COUNT(*) FROM symbols").fetchone()[0]
 
             self.assertEqual(0, count)
@@ -279,10 +289,11 @@ class FileIndexTests(unittest.TestCase):
             header.write_text("class BView : public BHandler {};", encoding="utf-8")
 
             initialize_database(db_path)
-            with sqlite3.connect(db_path) as connection:
-                update_file_index(connection, source)
-                header.write_text("class BView : public BHandler { public: void Draw(); };", encoding="utf-8")
-                update_file_index(connection, source, full=True)
+            with closing(sqlite3.connect(db_path)) as connection:
+                with connection:
+                    update_file_index(connection, source)
+                    header.write_text("class BView : public BHandler { public: void Draw(); };", encoding="utf-8")
+                    update_file_index(connection, source, full=True)
                 relations = connection.execute(
                     """
                     SELECT COUNT(*)
@@ -306,11 +317,12 @@ class FileIndexTests(unittest.TestCase):
             )
 
             initialize_database(db_path)
-            with sqlite3.connect(db_path) as connection:
-                connection.execute(
-                    "INSERT INTO kits (name, display_name) VALUES ('stale', 'Stale Kit')"
-                )
-                update_file_index(connection, source, full=True)
+            with closing(sqlite3.connect(db_path)) as connection:
+                with connection:
+                    connection.execute(
+                        "INSERT INTO kits (name, display_name) VALUES ('stale', 'Stale Kit')"
+                    )
+                    update_file_index(connection, source, full=True)
                 kit_names = [
                     row[0]
                     for row in connection.execute("SELECT name FROM kits ORDER BY name")

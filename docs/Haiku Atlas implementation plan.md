@@ -5,7 +5,7 @@ This document keeps the operational plan separate from the spec/seed.
 ## 1. Base Decisions
 
 - [x] Confirm v0 stack: Python 3.10+, SQLite, CLI-first, decoupled UI.
-- [ ] Confirm v0 scope: heuristic parser, incremental index, name search.
+- [x] Confirm v0 scope: heuristic parser, incremental index, name search.
 - [x] Define input policy: installed SDK, full source tree, or both.
 - [x] Lock project name and binary names (atlas-indexer, atlas).
 
@@ -56,9 +56,9 @@ This document keeps the operational plan separate from the spec/seed.
 - [x] Implement search box connected to atlas/SQL queries.
 - [x] Implement basic history (back/forward/recent).
 - [x] Show source context from nearby header comments.
-- [ ] Validate on Linux and Windows with the same index.
+- [x] Validate on Linux and Windows with the same index.
   - [x] Linux flow.
-  - [ ] Windows `.bat` flow.
+  - [x] Windows `.bat` flow.
 
 ## 7. Week 6 - v0 Release
 
@@ -70,11 +70,11 @@ This document keeps the operational plan separate from the spec/seed.
 
 ## 8. Definition of Done (v0)
 
-- [ ] Indexes headers from a real Haiku tree without crashing.
-- [ ] Finds canonical nodes (BApplication, BWindow, BView, BMessage).
-- [ ] Shows main public methods per class.
-- [ ] Incremental reindex reuses cache and reduces runtime.
-- [ ] Works on Linux and Windows with the same CLI flow.
+- [x] Indexes headers from a real Haiku tree without crashing.
+- [x] Finds canonical nodes (BApplication, BWindow, BView, BMessage).
+- [x] Shows main public methods per class.
+- [x] Incremental reindex reuses cache and reduces runtime.
+- [x] Works on Linux and Windows with the same CLI flow.
 
 ## 9. Post-v0 Backlog
 

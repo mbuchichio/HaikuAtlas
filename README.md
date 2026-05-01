@@ -58,6 +58,7 @@ and show basic symbol details.
 ## Project Notes
 
 - [CLI reference](docs/cli-reference)
+- [Changelog](CHANGELOG.md)
 - [Cross-platform validation](docs/cross-platform-validation.md)
 - [Spec / seed](docs/Haiku%20Atlas%20seed.md)
 - [Implementation plan](docs/Haiku%20Atlas%20implementation%20plan.md)

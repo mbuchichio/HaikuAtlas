@@ -3,6 +3,7 @@ from __future__ import annotations
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from pathlib import Path
 
 from haiku_atlas.db import initialize_database
@@ -15,7 +16,7 @@ class DatabaseTests(unittest.TestCase):
 
             initialize_database(db_path)
 
-            with sqlite3.connect(db_path) as connection:
+            with closing(sqlite3.connect(db_path)) as connection:
                 tables = {
                     row[0]
                     for row in connection.execute(

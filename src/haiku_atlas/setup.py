@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from contextlib import closing
 import shutil
 import sqlite3
 import subprocess
@@ -31,8 +32,9 @@ def setup_haiku_source(
         return 1
 
     initialize_database(db_path)
-    with sqlite3.connect(db_path) as connection:
-        result = update_file_index(connection, source_path / "headers", full=True)
+    with closing(sqlite3.connect(db_path)) as connection:
+        with connection:
+            result = update_file_index(connection, source_path / "headers", full=True)
 
     print(
         "atlas setup: "

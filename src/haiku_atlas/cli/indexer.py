@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import sqlite3
 import sys
+from contextlib import closing
 from pathlib import Path
 
 from haiku_atlas.db import DEFAULT_DB_PATH, initialize_database
@@ -71,7 +72,7 @@ def has_explicit_source(args: argparse.Namespace) -> bool:
 
 
 def get_stored_source_path(db_path: Path) -> Path | None:
-    with sqlite3.connect(db_path) as connection:
+    with closing(sqlite3.connect(db_path)) as connection:
         row = connection.execute(
             "SELECT value FROM settings WHERE key = 'source_path'"
         ).fetchone()
@@ -102,8 +103,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"atlas-indexer: initialized {args.db} [{mode}] source={source}")
         return 0
 
-    with sqlite3.connect(args.db) as connection:
-        result = update_file_index(connection, source_path, full=full)
+    with closing(sqlite3.connect(args.db)) as connection:
+        with connection:
+            result = update_file_index(connection, source_path, full=full)
 
     print(
         "atlas-indexer: "
