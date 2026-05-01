@@ -101,6 +101,58 @@ class FileIndexTests(unittest.TestCase):
             self.assertIn(("defined_in", "View.h"), relations)
             self.assertIn(("inherits", "BHandler"), relations)
 
+    def test_update_file_index_stores_public_methods_as_child_symbols(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "source"
+            source.mkdir()
+            (source / "View.h").write_text(
+                """
+                class BView : public BHandler {
+                public:
+                    BView(BRect frame);
+                    virtual void Draw(BRect update);
+                private:
+                    void PrivateHook();
+                };
+                """,
+                encoding="utf-8",
+            )
+
+            initialize_database(db_path)
+            with sqlite3.connect(db_path) as connection:
+                update_file_index(connection, source)
+                symbols = connection.execute(
+                    """
+                    SELECT child.kind, child.qualified_name, parent.qualified_name
+                    FROM symbols child
+                    LEFT JOIN symbols parent ON parent.id = child.parent_id
+                    ORDER BY child.qualified_name
+                    """
+                ).fetchall()
+                relations = connection.execute(
+                    """
+                    SELECT relation_type, target_text
+                    FROM relations
+                    WHERE relation_type = 'contains'
+                    ORDER BY target_text
+                    """
+                ).fetchall()
+
+            self.assertEqual(
+                [
+                    ("class", "BView", None),
+                    ("constructor", "BView::BView", "BView"),
+                    ("method", "BView::Draw", "BView"),
+                ],
+                symbols,
+            )
+            self.assertEqual(
+                [("contains", "BView::BView"), ("contains", "BView::Draw")],
+                relations,
+            )
+
     def test_update_file_index_removes_symbols_for_deleted_headers(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

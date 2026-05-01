@@ -142,6 +142,10 @@ def _insert_symbol(
     file_path: str,
     symbol: ParsedSymbol,
 ) -> None:
+    parent_id = None
+    if symbol.parent_qualified_name is not None:
+        parent_id = _get_symbol_id(connection, symbol.parent_qualified_name)
+
     cursor = connection.execute(
         """
         INSERT INTO symbols (
@@ -152,9 +156,10 @@ def _insert_symbol(
             file_id,
             line_start,
             line_end,
+            parent_id,
             raw_declaration
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(qualified_name) DO UPDATE SET
             kind = excluded.kind,
             name = excluded.name,
@@ -162,6 +167,7 @@ def _insert_symbol(
             file_id = excluded.file_id,
             line_start = excluded.line_start,
             line_end = excluded.line_end,
+            parent_id = excluded.parent_id,
             raw_declaration = excluded.raw_declaration
         """,
         (
@@ -172,6 +178,7 @@ def _insert_symbol(
             file_id,
             symbol.line_start,
             symbol.line_end,
+            parent_id,
             symbol.raw_declaration,
         ),
     )
@@ -186,8 +193,20 @@ def _insert_symbol(
         symbol_id = int(row[0])
 
     _insert_relation(connection, symbol_id, "defined_in", file_path)
+    if parent_id is not None:
+        _insert_relation(connection, parent_id, "contains", symbol.qualified_name, symbol_id)
     for base in symbol.inherits:
         _insert_relation(connection, symbol_id, "inherits", base)
+
+
+def _get_symbol_id(connection: sqlite3.Connection, qualified_name: str) -> int | None:
+    row = connection.execute(
+        "SELECT id FROM symbols WHERE qualified_name = ?",
+        (qualified_name,),
+    ).fetchone()
+    if row is None:
+        return None
+    return int(row[0])
 
 
 def _insert_relation(
@@ -195,11 +214,17 @@ def _insert_relation(
     source_symbol_id: int,
     relation_type: str,
     target_text: str,
+    target_symbol_id: int | None = None,
 ) -> None:
     connection.execute(
         """
-        INSERT OR IGNORE INTO relations (source_symbol_id, relation_type, target_text)
-        VALUES (?, ?, ?)
+        INSERT OR IGNORE INTO relations (
+            source_symbol_id,
+            relation_type,
+            target_symbol_id,
+            target_text
+        )
+        VALUES (?, ?, ?, ?)
         """,
-        (source_symbol_id, relation_type, target_text),
+        (source_symbol_id, relation_type, target_symbol_id, target_text),
     )

@@ -30,10 +30,10 @@ This document keeps the operational plan separate from the spec/seed.
 
 ## 4. Week 3 - Public Methods and Search
 
-- [ ] Detect public/protected/private sections per class.
-- [ ] Extract simple signatures for public methods and constructors/destructors.
-- [ ] Store methods in symbols and belongs_to_kit/contains relations.
-- [x] Implement name search (class/header) with simple ranking.
+- [x] Detect public/protected/private sections per class.
+- [x] Extract simple signatures for public methods and constructors/destructors.
+- [x] Store methods in symbols and contains relations.
+- [x] Implement name search (class/method) with simple ranking.
 - [x] Add atlas-query search "BView".
 - [x] Add atlas-query show "BView" for node detail.
 

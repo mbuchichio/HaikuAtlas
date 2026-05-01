@@ -155,6 +155,39 @@ class CliTests(unittest.TestCase):
             self.assertIn("Header: View.h:1", output.getvalue())
             self.assertIn("inherits: BHandler", output.getvalue())
 
+    def test_query_search_and_show_include_public_methods(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "headers"
+            source.mkdir()
+            (source / "View.h").write_text(
+                """
+                class BView : public BHandler {
+                public:
+                    virtual void Draw(BRect update);
+                };
+                """,
+                encoding="utf-8",
+            )
+
+            with redirect_stdout(StringIO()):
+                indexer_main(["--db", str(db_path), "--incremental", str(source)])
+
+            search_output = StringIO()
+            with redirect_stdout(search_output):
+                search_result = query_main(["--db", str(db_path), "search", "Draw"])
+
+            show_output = StringIO()
+            with redirect_stdout(show_output):
+                show_result = query_main(["--db", str(db_path), "show", "BView::Draw"])
+
+            self.assertEqual(0, search_result)
+            self.assertIn("method\tBView::Draw", search_output.getvalue())
+            self.assertEqual(0, show_result)
+            self.assertIn("Kind: method", show_output.getvalue())
+            self.assertIn("Declaration: virtual void Draw(BRect update);", show_output.getvalue())
+
     def test_query_show_returns_error_for_missing_symbol(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             db_path = Path(directory) / "atlas.sqlite3"

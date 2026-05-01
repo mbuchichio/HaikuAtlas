@@ -42,8 +42,8 @@ python -m pip install -e .
 
 The indexer currently scans `.h` and `.hpp` files, stores file metadata,
 detects new, changed, deleted, and unchanged files, and extracts simple
-class/struct/enum symbols. The query CLI can search symbols and show basic
-symbol details.
+class/struct/enum symbols plus public methods. The query CLI can search symbols
+and show basic symbol details.
 
 ## Project Notes
 
