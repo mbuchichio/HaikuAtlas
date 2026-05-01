@@ -46,6 +46,10 @@ CLI shape. Header scanning and search implementation come next.
 - [Spec / seed](docs/Haiku%20Atlas%20seed.md)
 - [Implementation plan](docs/Haiku%20Atlas%20implementation%20plan.md)
 
+## License
+
+MIT. See [LICENSE](LICENSE).
+
 ## Tests
 
 The smoke tests use only the Python standard library:

@@ -2,9 +2,9 @@
 
 ## 0. Idea
 
-Haiku API Atlas es una app nativa para explorar la API de Haiku como una estructura navegable, no solo como documentación textual.
+Haiku API Atlas is a native app for exploring the Haiku API as a navigable structure, not only as textual documentation.
 
-La unidad principal no es una pagina, sino un nodo:
+The main unit is not a page, but a node:
 
 - Kit
 - Class
@@ -16,56 +16,56 @@ La unidad principal no es una pagina, sino un nodo:
 - Subsystem
 - Example
 
-La app combina dos funciones:
+The app combines two functions:
 
-- 70% explorador estructural
-- 30% lector de documentacion
+- 70% structural explorer
+- 30% documentation reader
 
-Objetivo: ayudar a alguien a entender la API, la arquitectura y la ubicacion del codigo fuente de Haiku sin tener que saltar manualmente entre headers, docs online, repo y busquedas sueltas.
+Goal: help someone understand the Haiku API, architecture, and source-code location without manually jumping between headers, online docs, repositories, and loose searches.
 
-## 1. Principio de diseno
+## 1. Design Principle
 
-### 1.1 Frase guia
+### 1.1 Guiding Phrase
 
-> Un simbolo es un lugar.  
-> La documentacion es lo que ves cuando llegas ahi.
+> A symbol is a place.  
+> The documentation is what you see when you arrive there.
 
-### 1.2 No es
+### 1.2 It Is Not
 
-No es solo:
+It is not only:
 
-- un navegador HTML
-- un clon de Zeal/Dash
-- un visor estatico de documentacion
-- un parser C++ perfecto
-- un IDE completo
+- an HTML browser
+- a Zeal/Dash clone
+- a static documentation viewer
+- a perfect C++ parser
+- a complete IDE
 
-### 1.3 Si es
+### 1.3 It Is
 
-Es:
+It is:
 
-- un atlas de la API
-- un browser jerarquico de kits/clases/miembros
-- un lector de nodos
-- una herramienta de orientacion para contributors
-- un mapa entre docs, headers e implementacion
+- an atlas of the API
+- a hierarchical browser for kits/classes/members
+- a node reader
+- an orientation tool for contributors
+- a map between docs, headers, and implementation
 
-## 2. Usuarios objetivo
+## 2. Target Users
 
-### 2.1 Nuevo contributor
+### 2.1 New Contributor
 
-Quiere responder:
+Wants to answer:
 
-- Que clase uso
-- Donde esta definida
-- De que hereda
-- Que metodos tiene
-- Donde esta implementada
-- Que ejemplos existen
+- Which class should I use?
+- Where is it defined?
+- What does it inherit from?
+- Which methods does it have?
+- Where is it implemented?
+- Which examples exist?
 
-### 2.2 Developer de apps Haiku
+### 2.2 Haiku App Developer
 
-Quiere navegar rapidamente la API publica:
+Wants to quickly navigate the public API:
 
 - Application Kit
 - Interface Kit
@@ -75,21 +75,21 @@ Quiere navegar rapidamente la API publica:
 - Locale Kit
 - Network Kit
 
-### 2.3 Contributor avanzado
+### 2.3 Advanced Contributor
 
-Quiere saltar entre:
+Wants to jump between:
 
-- header publico
+- public header
 - source implementation
-- docs existentes
-- relaciones entre clases
-- cambios recientes
+- existing docs
+- relationships between classes
+- recent changes
 
-## 3. UI principal
+## 3. Main UI
 
-### 3.1 Layout base
+### 3.1 Base Layout
 
-Dos paneles:
+Two panels:
 
 ```text
 +------------------------------+---------------------------------------------+
@@ -113,9 +113,9 @@ Dos paneles:
 +------------------------------+---------------------------------------------+
 ```
 
-### 3.2 Browser panel
+### 3.2 Browser Panel
 
-El browser puede cambiar de vista:
+The browser can switch views:
 
 - By Kit
 - By Class
@@ -126,7 +126,7 @@ El browser puede cambiar de vista:
 - Recently Viewed
 - Bookmarks
 
-Vista inicial recomendada:
+Recommended initial view:
 
 - Application Kit
 - Interface Kit
@@ -141,11 +141,11 @@ Vista inicial recomendada:
 
 ### 3.3 Node Reader
 
-El panel derecho cambia segun tipo de nodo.
+The right panel changes according to node type.
 
-#### Class node
+#### Class Node
 
-Muestra:
+Shows:
 
 - Name
 - Kind
@@ -155,14 +155,14 @@ Muestra:
 - Inheritance
 - Public methods
 - Protected methods
-- Constants/enums related
+- Related constants/enums
 - Related classes
 - Docs/comment block
 - Examples
 
-#### Method node
+#### Method Node
 
-Muestra:
+Shows:
 
 - Signature
 - Owning class
@@ -174,9 +174,9 @@ Muestra:
 - Docs/comment block
 - Examples
 
-#### Kit node
+#### Kit Node
 
-Muestra:
+Shows:
 
 - Kit name
 - Summary
@@ -185,22 +185,22 @@ Muestra:
 - Headers
 - Subsystem relation
 
-#### Header node
+#### Header Node
 
-Muestra:
+Shows:
 
 - Path
 - Kit
-- Symbols declared
+- Declared symbols
 - Includes
 - Last indexed
 - Open file action
 
-## 4. Data model
+## 4. Data Model
 
-### 4.1 Nodos
+### 4.1 Nodes
 
-Todo elemento navegable es un nodo.
+Every navigable element is a node.
 
 ```text
 SymbolNode
@@ -216,7 +216,7 @@ SymbolNode
   kit_id
 ```
 
-Tipos iniciales:
+Initial types:
 
 - kit
 - header
@@ -232,9 +232,9 @@ Tipos iniciales:
 - namespace
 - subsystem
 
-### 4.2 Relaciones
+### 4.2 Relations
 
-Las relaciones son tan importantes como los nodos.
+Relations are as important as nodes.
 
 ```text
 Relation
@@ -244,7 +244,7 @@ Relation
   to_symbol_id
 ```
 
-Tipos:
+Types:
 
 - declares
 - contains
@@ -258,7 +258,7 @@ Tipos:
 - implemented_in
 - belongs_to_kit
 
-### 4.3 Archivos
+### 4.3 Files
 
 ```text
 FileRecord
@@ -281,97 +281,97 @@ Roles:
 
 ## 5. Indexer
 
-### 5.1 Objetivo
+### 5.1 Goal
 
-El indexer convierte headers/source/docs en un indice navegable.
+The indexer turns headers/source/docs into a navigable index.
 
 ```text
-headers publicos
+public headers
   -> indexer
   -> api-index.sqlite
   -> browser + node reader
 ```
 
-### 5.2 No reparsear todo siempre
+### 5.2 Do Not Reparse Everything Every Time
 
-La API no cambia constantemente, asi que el indice puede ser persistente.
+The API does not change constantly, so the index can be persistent.
 
-En startup:
+On startup:
 
 - scan files
 - compare mtime + size
 - reindex changed files
 - reuse cache for unchanged files
 
-### 5.3 Estrategia de deteccion de cambios
+### 5.3 Change Detection Strategy
 
-Para cada archivo:
+For each file:
 
 - path
 - mtime
 - size
-- sha256 opcional
+- optional sha256
 
-Reglas:
+Rules:
 
-- si archivo nuevo: indexar
-- si mtime/size cambio: reindexar
-- si archivo desaparece: remover simbolos
-- si nada cambio: usar cache
+- if the file is new: index it
+- if mtime/size changed: reindex it
+- if the file disappeared: remove symbols
+- if nothing changed: use cache
 
-sha256 queda como opcion para modo estricto.
+sha256 remains an option for strict mode.
 
-### 5.4 Indice descartable
+### 5.4 Disposable Index
 
-Regla fundamental:
+Fundamental rule:
 
-> El indice es cache, no fuente de verdad.
+> The index is cache, not a source of truth.
 
-Si se rompe:
+If it breaks:
 
 - delete api-index.sqlite
 - rebuild
 
 ## 6. Parser
 
-### 6.1 Fase 1 - parser heuristico
+### 6.1 Phase 1 - Heuristic Parser
 
-Para v0, evitar libclang.
+For v0, avoid libclang.
 
-El parser inicial detecta:
+The initial parser detects:
 
 - class BView : public BHandler
 - struct rgb_color
 - enum orientation
 - public/protected/private sections
-- method signatures simples
+- simple method signatures
 - constructors/destructors
 - typedefs
 - constants
-- comments cercanos
+- nearby comments
 
-Ventajas:
+Advantages:
 
 - simple
-- rapido
-- sin dependencias pesadas
-- suficiente para navegar
+- fast
+- no heavy dependencies
+- enough for navigation
 
-Desventajas aceptadas:
+Accepted disadvantages:
 
-- no entiende todo C++
-- puede fallar con macros
-- puede perder casos raros
+- does not understand all C++
+- may fail with macros
+- may miss rare cases
 
-### 6.2 Fase 2 - parser mejorado
+### 6.2 Phase 2 - Improved Parser
 
-Mas adelante:
+Later:
 
 - ClangProvider
 - Doxygen/XML provider
 - prebuilt docs provider
 
-La app debe disenarse con interfaz de proveedor:
+The app should be designed with a provider interface:
 
 ```text
 ISymbolProvider
@@ -381,17 +381,17 @@ ISymbolProvider
   DoxygenProvider
 ```
 
-Asi el parser inicial se puede reemplazar sin destruir la app.
+This lets the initial parser be replaced without destroying the app.
 
 ## 7. Storage
 
-### 7.1 SQLite recomendado
+### 7.1 SQLite Recommended
 
 Base:
 
 - api-index.sqlite
 
-Tablas minimas:
+Minimal tables:
 
 ```sql
 files(
@@ -432,7 +432,7 @@ docs(
 );
 ```
 
-### 7.2 Indices
+### 7.2 Indexes
 
 ```sql
 CREATE INDEX idx_symbols_name ON symbols(name);
@@ -442,9 +442,9 @@ CREATE INDEX idx_rel_from ON relations(from_symbol_id);
 CREATE INDEX idx_rel_to ON relations(to_symbol_id);
 ```
 
-## 8. Project layout
+## 8. Project Layout
 
-Repo propio:
+Own repository:
 
 ```text
 haiku-api-atlas/
@@ -492,131 +492,131 @@ haiku-api-atlas/
       enum_method.h
 ```
 
-## 9. Modos de uso
+## 9. Usage Modes
 
-### 9.1 Modo User
+### 9.1 User Mode
 
-Para quien solo quiere usar docs:
+For someone who only wants to use the docs:
 
-- abrir app
-- usar indice incluido o generado
-- buscar clase
-- leer nodo
+- open app
+- use included or generated index
+- search class
+- read node
 
-### 9.2 Modo Contributor
+### 9.2 Contributor Mode
 
-Para quien tiene repo local de Haiku:
+For someone with a local Haiku repo:
 
-- seleccionar path del repo Haiku
-- indexar headers
-- abrir nodos
-- saltar a header/source
-- detectar cambios tras git pull
+- select Haiku repo path
+- index headers
+- open nodes
+- jump to header/source
+- detect changes after git pull
 
-### 9.3 Modo SDK Installed
+### 9.3 Installed SDK Mode
 
-Para app instalada dentro de Haiku:
+For an app installed inside Haiku:
 
-- usar /boot/system/develop/headers
-- usar /boot/system/develop/documentation si existe
+- use /boot/system/develop/headers
+- use /boot/system/develop/documentation if it exists
 
-### 9.4 Modo Source Tree
+### 9.4 Source Tree Mode
 
-Para contributor:
+For contributors:
 
-- usar ~/haiku/headers
-- usar ~/haiku/src
-- usar ~/haiku/docs
+- use ~/haiku/headers
+- use ~/haiku/src
+- use ~/haiku/docs
 
 ## 10. MVP v0
 
-### Objetivo
+### Goal
 
-Una app nativa Haiku que permita navegar clases publicas de la API.
+A native Haiku app that allows users to browse public API classes.
 
-### Incluye
+### Includes
 
-- escaneo de headers publicos
-- agrupacion por kit
-- deteccion de clases/structs
-- deteccion de herencia simple
-- deteccion de metodos publicos
-- busqueda por nombre
-- panel derecho con detalles basicos
-- cache SQLite persistente
-- reindex incremental por mtime/size
+- public header scanning
+- grouping by kit
+- class/struct detection
+- simple inheritance detection
+- public method detection
+- name search
+- right panel with basic details
+- persistent SQLite cache
+- incremental reindex by mtime/size
 
-### No incluye
+### Does Not Include
 
-- parser C++ perfecto
-- grafico visual de herencia
-- Doxygen completo
-- busqueda semantica
-- integracion con editor externo
-- source implementation linking perfecto
+- perfect C++ parser
+- visual inheritance graph
+- complete Doxygen support
+- semantic search
+- external editor integration
+- perfect source implementation linking
 
-### Success criteria
+### Success Criteria
 
-- abrir app
-- seleccionar repo/SDK path
-- indexar sin crash
-- ver Application Kit / Interface Kit
-- abrir BApplication, BWindow, BView, BMessage
-- ver metodos principales
-- buscar por nombre
-- cerrar/reabrir instantaneo usando cache
+- open app
+- select repo/SDK path
+- index without crashing
+- see Application Kit / Interface Kit
+- open BApplication, BWindow, BView, BMessage
+- see main methods
+- search by name
+- close/reopen instantly using cache
 
 ## 11. v1
 
-Mejoras:
+Improvements:
 
-- comentarios cercanos extraidos de headers
+- nearby comments extracted from headers
 - source path guessing
 - examples finder
 - bookmarks
 - recent nodes
-- mejor search
-- members heredados
-- modo header path
+- better search
+- inherited members
+- header path mode
 
 Examples finder:
 
-Buscar en:
+Search in:
 
 - src/apps
 - src/tests
 - src/preferences
 - src/demos
 
-Relacion:
+Relation:
 
 - example_uses_symbol
 
 ## 12. v2
 
-Exploracion avanzada:
+Advanced exploration:
 
-- grafo visual de herencia
+- visual inheritance graph
 - related classes
 - used by
 - method override tree
-- diff entre versiones de API
-- modo contributor: donde tocar docs
-- abrir en editor externo
-- exportar indice JSON
+- diff between API versions
+- contributor mode: where to edit docs
+- open in external editor
+- export JSON index
 
-## 13. UI behavior
+## 13. UI Behavior
 
 ### 13.1 Search
 
-Search global:
+Global search:
 
 - BView
 - view
 - Draw
 - BMessage
 
-Resultados agrupados:
+Grouped results:
 
 - Classes
 - Methods
@@ -625,11 +625,11 @@ Resultados agrupados:
 
 ### 13.2 Breadcrumb
 
-El Node Reader muestra:
+The Node Reader shows:
 
 - Interface Kit > BView > Draw(BRect)
 
-### 13.3 Navigation history
+### 13.3 Navigation History
 
 - Back
 - Forward
@@ -637,7 +637,7 @@ El Node Reader muestra:
 
 ### 13.4 Bookmarks
 
-Bookmarks locales:
+Local bookmarks:
 
 - BApplication
 - BWindow
@@ -647,80 +647,80 @@ Bookmarks locales:
 - BPath
 - BEntry
 
-## 14. Technical risks
+## 14. Technical Risks
 
-### 14.1 C++ parsing
+### 14.1 C++ Parsing
 
-Riesgo:
+Risk:
 
-- headers complejos
+- complex headers
 - macros
 - #ifdef
-- signatures multiline
+- multiline signatures
 - templates
 
-Mitigacion:
+Mitigation:
 
-- heuristica suficiente para MVP
-- fallar suave
-- mostrar raw declaration si no entiende
-- disenar provider reemplazable
+- heuristic good enough for MVP
+- fail softly
+- show raw declaration when it does not understand
+- design replaceable provider
 
-### 14.2 Source linking
+### 14.2 Source Linking
 
-Riesgo:
+Risk:
 
-- declaracion en header no mapea 1:1 con implementation
+- header declaration does not map 1:1 to implementation
 - overloads
 - inline methods
 - generated code
 
-Mitigacion:
+Mitigation:
 
-- v0 solo header
+- v0 header only
 - v1 source guess
-- v2 index source
+- v2 source index
 
-### 14.3 Scope creep
+### 14.3 Scope Creep
 
-Riesgo:
+Risk:
 
-- terminar haciendo IDE
+- ending up building an IDE
 
-Mitigacion:
+Mitigation:
 
-- no editar codigo
-- no compilar
+- do not edit code
+- do not compile
 - no debugger
 - no LSP initially
 
-## 15. Non-goals explicitos
+## 15. Explicit Non-Goals
 
-- No es un IDE.
-- No es un reemplazo de la documentacion oficial.
-- No intenta parsear todo C++ perfectamente en v0.
-- No requiere conexion a internet.
-- No depende de AI.
-- No modifica el repo de Haiku.
+- It is not an IDE.
+- It is not a replacement for official documentation.
+- It does not try to parse all C++ perfectly in v0.
+- It does not require an internet connection.
+- It does not depend on AI.
+- It does not modify the Haiku repo.
 
-## 16. Filosofia de implementacion
+## 16. Implementation Philosophy
 
-### 16.1 Simple primero
+### 16.1 Simple First
 
-Primero:
+First:
 
-- headers -> simbolos -> arbol -> nodo
+- headers -> symbols -> tree -> node
 
-Despues:
+Then:
 
 - docs
 - examples
 - source links
 - graphs
 
-### 16.2 Native-first
+### 16.2 Native-First
 
-Idealmente app nativa Haiku:
+Ideally a native Haiku app:
 
 - BApplication
 - BWindow
@@ -728,37 +728,37 @@ Idealmente app nativa Haiku:
 - BStringView
 - BTextView
 
-Pero el indexer debe poder ser CLI tambien.
+But the indexer should also be usable as a CLI.
 
-### 16.3 Separar indexer y UI
+### 16.3 Separate Indexer and UI
 
 ```text
 atlas-indexer
-  -> genera api-index.sqlite
+  -> generates api-index.sqlite
 
 atlas
-  -> consume api-index.sqlite
+  -> consumes api-index.sqlite
 ```
 
-Eso permite debuggear el parser sin abrir UI.
+This makes it possible to debug the parser without opening the UI.
 
-## 17. CLI companion
+## 17. CLI Companion
 
 ### atlas-indexer
 
-Uso:
+Usage:
 
 ```bash
 atlas-indexer --sdk /boot/system/develop/headers --out api-index.sqlite
 ```
 
-O:
+Or:
 
 ```bash
 atlas-indexer --haiku-source /boot/home/haiku --out api-index.sqlite
 ```
 
-Opciones:
+Options:
 
 - --full
 - --incremental
@@ -769,7 +769,7 @@ Opciones:
 
 ### atlas
 
-Uso:
+Usage:
 
 ```bash
 atlas
@@ -777,7 +777,7 @@ atlas --index api-index.sqlite
 atlas --source ~/haiku
 ```
 
-## 18. Primeros nodos canonicos para probar
+## 18. First Canonical Nodes to Test
 
 - BApplication
 - BLooper
@@ -799,11 +799,11 @@ atlas --source ~/haiku
 - BBuffer
 - BParameterWeb
 
-Si esos funcionan, la app ya empieza a ser util.
+If these work, the app already starts to become useful.
 
-## 19. UX ideal para un nodo de clase
+## 19. Ideal UX for a Class Node
 
-Ejemplo BView:
+BView example:
 
 ```text
 BView
@@ -845,18 +845,18 @@ Related:
   app_server
 ```
 
-## 20. Open questions
+## 20. Open Questions
 
-- El indice debe incluir private headers
-- Debe apuntar al source tree completo o solo al SDK instalado
-- Conviene app nativa desde el dia uno o primero CLI
-- SQLite o JSON para v0
-- Se integran docs existentes o solo estructura
-- Nombre final: Haiku Atlas, API Atlas, BeMap, ClassTracker
+- Should the index include private headers?
+- Should it point to the full source tree or only to the installed SDK?
+- Is it better to build a native app from day one or start CLI-first?
+- SQLite or JSON for v0?
+- Should existing docs be integrated, or only structure?
+- Final name: Haiku Atlas, API Atlas, BeMap, ClassTracker
 
-## 21. Roadmap sugerido
+## 21. Suggested Roadmap
 
-### Semana 1 - Indexer minimo
+### Week 1 - Minimal Indexer
 
 - scan headers
 - detect class/struct
@@ -864,7 +864,7 @@ Related:
 - write SQLite/JSON
 - CLI dump
 
-### Semana 2 - UI minima
+### Week 2 - Minimal UI
 
 - BApplication
 - MainWindow
@@ -873,24 +873,24 @@ Related:
 - load index
 - click class -> show details
 
-### Semana 3 - Methods + search
+### Week 3 - Methods + Search
 
 - parse public methods
 - search box
 - method list
 - header line references
 
-### Semana 4 - Polish
+### Week 4 - Polish
 
 - cache invalidation
 - recent nodes
 - bookmarks
 - basic docs extraction
-- package hpkg experimental
+- experimental hpkg package
 
-## 22. Nombre tentativo
+## 22. Tentative Name
 
-Favoritos:
+Favorites:
 
 - Haiku Atlas
 - API Atlas
@@ -898,8 +898,9 @@ Favoritos:
 - ClassTracker
 - KitExplorer
 
-Mi voto: Haiku Atlas.
+My vote: Haiku Atlas.
 
-Porque no promete documentacion perfecta. Promete algo mas interesante:
+Because it does not promise perfect documentation. It promises something more interesting:
 
-> cartografia del sistema.
+> cartography of the system.
+

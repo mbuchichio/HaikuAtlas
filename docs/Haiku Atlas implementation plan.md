@@ -1,79 +1,80 @@
-# Haiku API Atlas - Plan de implementacion
+# Haiku API Atlas - Implementation Plan
 
-Este documento separa el plan operativo del Spec/Seed.
+This document keeps the operational plan separate from the spec/seed.
 
-## 1. Decisiones base
+## 1. Base Decisions
 
-- [x] Confirmar stack v0: Python 3.10+, SQLite, CLI-first, UI desacoplada.
-- [ ] Confirmar alcance v0: parser heuristico, index incremental, search por nombre.
-- [ ] Definir politica de entrada: SDK instalado, source tree completo o ambos.
-- [x] Cerrar nombre del proyecto y nombres de binarios (atlas-indexer, atlas-query).
+- [x] Confirm v0 stack: Python 3.10+, SQLite, CLI-first, decoupled UI.
+- [ ] Confirm v0 scope: heuristic parser, incremental index, name search.
+- [ ] Define input policy: installed SDK, full source tree, or both.
+- [x] Lock project name and binary names (atlas-indexer, atlas-query).
 
-## 2. Semana 1 - Bootstrap del proyecto
+## 2. Week 1 - Project Bootstrap
 
-- [x] Crear estructura de carpetas (src/, data/, tests/, docs/).
-- [x] Crear pyproject.toml con tooling basico (formatter, linter, test).
-- [x] Definir comandos CLI base (index, dump-symbols, dump-kits, search).
-- [x] Agregar data/schema.sql con tablas files, symbols, relations, docs.
-- [x] Implementar inicializacion de DB y migracion de esquema en arranque.
-- [x] Documentar setup rapido en README.
+- [x] Create folder structure (src/, data/, tests/, docs/).
+- [x] Create pyproject.toml with basic tooling (formatter, linter, test).
+- [x] Define base CLI commands (index, dump-symbols, dump-kits, search).
+- [x] Add data/schema.sql with files, symbols, relations, docs tables.
+- [x] Implement DB initialization and schema migration on startup.
+- [x] Document quick setup in README.
 
-## 3. Semana 2 - Indexer minimo funcional
+## 3. Week 2 - Minimal Functional Indexer
 
-- [ ] Implementar escaneo de archivos header (.h, .hpp) por path configurado.
-- [ ] Persistir metadata de archivos (path, mtime, size, last_indexed_at).
-- [ ] Implementar deteccion incremental (nuevo/cambio/borrado/sin cambios).
-- [ ] Implementar parser heuristico para class, struct, enum.
-- [ ] Guardar simbolos y relaciones minimas (contains, inherits, defined_in).
-- [ ] Exponer atlas-indexer --full y atlas-indexer --incremental.
-- [ ] Validar con fixtures de prueba y dump legible por consola.
+- [ ] Implement header file scanning (.h, .hpp) from a configured path.
+- [ ] Persist file metadata (path, mtime, size, last_indexed_at).
+- [ ] Implement incremental detection (new/changed/deleted/unchanged).
+- [ ] Implement heuristic parser for class, struct, enum.
+- [ ] Store symbols and minimal relations (contains, inherits, defined_in).
+- [ ] Expose atlas-indexer --full and atlas-indexer --incremental.
+- [ ] Validate with test fixtures and readable console dumps.
 
-## 4. Semana 3 - Metodos publicos y busqueda
+## 4. Week 3 - Public Methods and Search
 
-- [ ] Detectar secciones public/protected/private por clase.
-- [ ] Extraer firmas simples de metodos publicos y constructores/destructores.
-- [ ] Guardar metodos en symbols y relaciones belongs_to_kit/contains.
-- [ ] Implementar busqueda por nombre (clase/metodo/header) con ranking simple.
-- [ ] Agregar comando atlas-query search "BView".
-- [ ] Agregar comando atlas-query show "BView" para detalle de nodo.
+- [ ] Detect public/protected/private sections per class.
+- [ ] Extract simple signatures for public methods and constructors/destructors.
+- [ ] Store methods in symbols and belongs_to_kit/contains relations.
+- [ ] Implement name search (class/method/header) with simple ranking.
+- [ ] Add atlas-query search "BView".
+- [ ] Add atlas-query show "BView" for node detail.
 
-## 5. Semana 4 - Calidad y DX
+## 5. Week 4 - Quality and DX
 
-- [ ] Agregar logging configurable (--verbose) para indexer.
-- [ ] Agregar manejo de errores y fallos suaves del parser (raw declaration).
-- [ ] Cubrir casos borde: macros, multiline signatures, headers incompletos.
-- [ ] Agregar pruebas de regresion con fixtures reales de Haiku API.
-- [ ] Medir performance base (tiempo full index y incremental).
-- [ ] Definir umbrales de aceptacion para performance de v0.
+- [ ] Add configurable logging (--verbose) for the indexer.
+- [ ] Add error handling and soft parser failures (raw declaration).
+- [ ] Cover edge cases: macros, multiline signatures, incomplete headers.
+- [ ] Add regression tests with real Haiku API fixtures.
+- [ ] Measure baseline performance (full and incremental index time).
+- [ ] Define v0 performance acceptance thresholds.
 
-## 6. Semana 5 - UI minima cross-platform
+## 6. Week 5 - Minimal Cross-Platform UI
 
-- [ ] Elegir frontend v0 (TUI o web local) consumidor de SQLite.
-- [ ] Mostrar browser por kit y panel de detalle de nodo.
-- [ ] Implementar search box conectado a atlas-query/consultas SQL.
-- [ ] Implementar historial basico (back/forward/recent).
-- [ ] Validar en Linux y Windows con el mismo indice.
+- [ ] Choose v0 frontend (TUI or local web) that consumes SQLite.
+- [ ] Show kit browser and node detail panel.
+- [ ] Implement search box connected to atlas-query/SQL queries.
+- [ ] Implement basic history (back/forward/recent).
+- [ ] Validate on Linux and Windows with the same index.
 
-## 7. Semana 6 - Release v0
+## 7. Week 6 - v0 Release
 
-- [ ] Congelar formato de indice SQLite v0.
-- [ ] Escribir guia de uso para modo SDK y modo source tree.
-- [ ] Generar binarios/paquetes para Linux y Windows.
-- [ ] Ejecutar smoke test end-to-end en entorno limpio.
-- [ ] Publicar changelog y roadmap de v1.
+- [ ] Freeze SQLite index format v0.
+- [ ] Write usage guide for SDK mode and source tree mode.
+- [ ] Generate binaries/packages for Linux and Windows.
+- [ ] Run end-to-end smoke test in a clean environment.
+- [ ] Publish changelog and v1 roadmap.
 
-## 8. Definicion de done (v0)
+## 8. Definition of Done (v0)
 
-- [ ] Indexa headers sin crash en un arbol real de Haiku.
-- [ ] Encuentra nodos canonicos (BApplication, BWindow, BView, BMessage).
-- [ ] Muestra metodos publicos principales por clase.
-- [ ] Reindex incremental reutiliza cache y reduce tiempo de ejecucion.
-- [ ] Funciona en Linux y Windows con el mismo flujo CLI.
+- [ ] Indexes headers from a real Haiku tree without crashing.
+- [ ] Finds canonical nodes (BApplication, BWindow, BView, BMessage).
+- [ ] Shows main public methods per class.
+- [ ] Incremental reindex reuses cache and reduces runtime.
+- [ ] Works on Linux and Windows with the same CLI flow.
 
-## 9. Backlog post-v0
+## 9. Post-v0 Backlog
 
-- [ ] Extraccion de comentarios cercanos para docs por nodo.
-- [ ] Source path guessing e index de implementaciones.
+- [ ] Extract nearby comments as docs per node.
+- [ ] Source path guessing and implementation indexing.
 - [ ] Examples finder (example_uses_symbol).
-- [ ] Bookmarks persistentes y recently viewed.
-- [ ] Provider alternativo con Clang o Doxygen.
+- [ ] Persistent bookmarks and recently viewed nodes.
+- [ ] Alternative provider using Clang or Doxygen.
+
