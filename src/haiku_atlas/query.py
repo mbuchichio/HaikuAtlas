@@ -27,6 +27,14 @@ class SymbolDetail:
     relations: tuple[tuple[str, str], ...]
 
 
+@dataclass(frozen=True)
+class SymbolPage:
+    detail: SymbolDetail
+    inherits: tuple[str, ...]
+    methods: tuple[str, ...]
+    other_relations: tuple[tuple[str, str], ...]
+
+
 def search_symbols(connection: sqlite3.Connection, term: str, *, limit: int = 20) -> list[SearchResult]:
     """Search symbols by name with exact/prefix/contains ranking."""
     pattern = f"%{term}%"
@@ -114,3 +122,28 @@ def get_symbol_detail(connection: sqlite3.Connection, name: str) -> SymbolDetail
         relations=relations,
     )
 
+
+def get_symbol_page(connection: sqlite3.Connection, name: str) -> SymbolPage | None:
+    """Return display-oriented symbol information for CLI/UI consumers."""
+    detail = get_symbol_detail(connection, name)
+    if detail is None:
+        return None
+
+    inherits: list[str] = []
+    methods: list[str] = []
+    other_relations: list[tuple[str, str]] = []
+
+    for relation_type, target in detail.relations:
+        if relation_type == "inherits":
+            inherits.append(target)
+        elif relation_type == "contains":
+            methods.append(target)
+        elif relation_type != "defined_in":
+            other_relations.append((relation_type, target))
+
+    return SymbolPage(
+        detail=detail,
+        inherits=tuple(inherits),
+        methods=tuple(methods),
+        other_relations=tuple(other_relations),
+    )

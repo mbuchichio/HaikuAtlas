@@ -19,7 +19,7 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(0, result)
         self.assertIn("Haiku Atlas", output.getvalue())
-        self.assertIn("atlas-indexer SOURCE                  build/update the index", output.getvalue())
+        self.assertIn("    atlas-indexer SOURCE                  build/update the index", output.getvalue())
 
     def test_query_help_prints_cli_reference(self) -> None:
         output = StringIO()
@@ -29,7 +29,7 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(0, result)
         self.assertIn("Haiku Atlas", output.getvalue())
-        self.assertIn("atlas search NAME                     find symbols", output.getvalue())
+        self.assertIn("    atlas search NAME                     find symbols", output.getvalue())
 
     def test_indexer_bootstrap_initializes_database(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -188,9 +188,9 @@ class CliTests(unittest.TestCase):
 
             self.assertEqual(0, result)
             self.assertIn("BView", output.getvalue())
-            self.assertIn("Kind: class", output.getvalue())
-            self.assertIn("Header: View.h:1", output.getvalue())
-            self.assertIn("inherits: BHandler", output.getvalue())
+            self.assertIn("class", output.getvalue())
+            self.assertIn("View.h:1", output.getvalue())
+            self.assertIn("inherits BHandler", output.getvalue())
 
     def test_query_search_and_show_include_public_methods(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -222,8 +222,65 @@ class CliTests(unittest.TestCase):
             self.assertEqual(0, search_result)
             self.assertIn("method\tBView::Draw", search_output.getvalue())
             self.assertEqual(0, show_result)
-            self.assertIn("Kind: method", show_output.getvalue())
-            self.assertIn("Declaration: virtual void Draw(BRect update);", show_output.getvalue())
+            self.assertIn("method", show_output.getvalue())
+            self.assertIn("virtual void Draw(BRect update);", show_output.getvalue())
+
+    def test_query_show_groups_public_methods(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "headers"
+            source.mkdir()
+            (source / "View.h").write_text(
+                """
+                class BView : public BHandler {
+                public:
+                    BView(BRect frame);
+                    virtual void Draw(BRect update);
+                };
+                """,
+                encoding="utf-8",
+            )
+
+            with redirect_stdout(StringIO()):
+                indexer_main(["--db", str(db_path), "--incremental", str(source)])
+
+            output = StringIO()
+            with redirect_stdout(output):
+                result = query_main(["--db", str(db_path), "show", "BView"])
+
+            self.assertEqual(0, result)
+            self.assertIn("methods\n", output.getvalue())
+            self.assertIn("  BView::BView", output.getvalue())
+            self.assertIn("  BView::Draw", output.getvalue())
+
+    def test_query_show_limits_long_method_lists(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "headers"
+            source.mkdir()
+            methods = "\n".join(f"void Method{i}();" for i in range(45))
+            (source / "View.h").write_text(
+                f"""
+                class BView {{
+                public:
+                    {methods}
+                }};
+                """,
+                encoding="utf-8",
+            )
+
+            with redirect_stdout(StringIO()):
+                indexer_main(["--db", str(db_path), "--incremental", str(source)])
+
+            output = StringIO()
+            with redirect_stdout(output):
+                result = query_main(["--db", str(db_path), "show", "BView"])
+
+            self.assertEqual(0, result)
+            self.assertIn("  ... 5 more", output.getvalue())
+            self.assertNotIn("BView::Method9", output.getvalue())
 
     def test_query_show_returns_error_for_missing_symbol(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
