@@ -15,8 +15,8 @@ All notable changes to Haiku Atlas are documented here.
   signatures, export macros, and truncated declarations.
 - Added v0 release docs for usage, index format, changelog, and roadmap.
 - Documented cross-platform validation notes for Linux and Windows.
-- Added web index controls for choosing a source path and running incremental or
-  full reindexing from the local UI.
+- Added local Admin controls for choosing a source path and running incremental
+  or full reindexing from the web UI.
 
 ### Fixed
 
@@ -28,6 +28,8 @@ All notable changes to Haiku Atlas are documented here.
   `MIDI Kit` in kit lists.
 - Parse class and struct definitions whose opening brace is on the following
   line, fixing missing MIDI2 classes such as `BMidiEndpoint` and `BMidiRoster`.
+- Kept the Admin entry point on the home page only, separated from the search
+  form and global navigation.
 
 ### Validated
 
@@ -41,4 +43,4 @@ All notable changes to Haiku Atlas are documented here.
 - Current local index reports 2627 headers, 13 kits, and 17826 symbols.
 - Canonical v0 nodes resolve with public methods: `BApplication`, `BWindow`,
   `BView`, and `BMessage`.
-- Unit suite passes on Windows: 72 tests.
+- Unit suite passes on Windows: 77 tests.

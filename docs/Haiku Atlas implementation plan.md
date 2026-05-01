@@ -52,7 +52,8 @@ This document keeps the operational plan separate from the spec/seed.
 ## 6. Week 5 - Minimal Cross-Platform UI
 
 - [x] Choose v0 frontend (TUI or local web) that consumes SQLite.
-- [x] Show kit browser and node detail panel.
+- [x] Show kit browser and node detail pages.
+- [ ] Implement the two-panel Browser / Node Reader layout from the seed.
 - [x] Implement search box connected to atlas/SQL queries.
 - [x] Implement basic history (back/forward/recent).
 - [x] Show source context from nearby header comments.

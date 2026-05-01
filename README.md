@@ -1,68 +1,54 @@
 # Haiku API Atlas
 
-Haiku API Atlas is a local explorer for the Haiku API. The v0 starts as a
-Python CLI that builds a SQLite index from Haiku headers and later feeds a
-separate UI.
-
-## Requirements
-
-- Python 3.10+
-- SQLite support from the Python standard library
+Haiku API Atlas is a local explorer for the Haiku API. It indexes Haiku headers
+into SQLite, then lets you browse kits, classes, methods, and source context
+through a local web UI or terminal commands.
 
 ## Quick Start
-
-From the repository root:
 
 ```sh
 ./atlas setup
 ```
 
-`setup` asks before downloading the Haiku source tree into `sources/haiku`,
-indexes it, then opens Atlas.
+`setup` asks before downloading Haiku into `sources/haiku`, builds
+`db/haiku-atlas.sqlite3`, and opens the local web UI.
 
-For a Haiku source checkout on Linux:
+With an existing Haiku checkout:
 
 ```sh
-./atlas-indexer ~/src/haiku
+./atlas-indexer /path/to/haiku
 ./atlas
 ```
 
-After the first index, `./atlas-indexer` rebuilds the last source path.
-
-On Windows, run the `.bat` wrappers from the repository root:
+On Windows, use the `.bat` wrappers:
 
 ```bat
 atlas-indexer.bat C:\path\to\haiku
-atlas.bat web
+atlas.bat
 ```
 
-## Current Commands
+## Commands
 
-- `./atlas-indexer SOURCE`
-- `./atlas-indexer`
-- `./atlas-indexer --full SOURCE`
-- `./atlas`
-- `./atlas setup`
-- `./atlas search NAME`
-- `./atlas show NAME`
-- `./atlas web`
-- `./atlas help`
-- `./atlas dump-symbols`
-- `./atlas dump-kits`
+```sh
+./atlas                 # open the local web UI
+./atlas status
+./atlas search BView
+./atlas show BMessage::SendReply
+./atlas kits
+./atlas kit interface
+./atlas-indexer SOURCE
+```
 
-The indexer currently scans `.h` and `.hpp` files, stores file metadata,
-detects new, changed, deleted, and unchanged files, and extracts simple
-class/struct/enum symbols plus public methods. The query CLI can search symbols
-and show basic symbol details.
+## Documentation
 
-## Project Notes
-
-- [CLI reference](docs/cli-reference)
 - [Usage guide](docs/usage-guide.md)
+- [CLI reference](docs/cli-reference)
 - [Index format v0](docs/index-format-v0.md)
 - [Changelog](docs/changelog.md)
-- [Cross-platform validation](docs/cross-platform-validation.md)
 - [v1 roadmap](docs/v1-roadmap.md)
+
+Historical planning notes:
+
 - [Spec / seed](docs/Haiku%20Atlas%20seed.md)
 - [Implementation plan](docs/Haiku%20Atlas%20implementation%20plan.md)
 
@@ -75,5 +61,5 @@ MIT. See [LICENSE](LICENSE).
 The smoke tests use only the Python standard library:
 
 ```sh
-PYTHONPATH=src python3 -m unittest discover -s tests
+PYTHONPATH=src python -m unittest discover -s tests
 ```
