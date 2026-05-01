@@ -18,8 +18,8 @@ class CliTests(unittest.TestCase):
             result = indexer_main(["help"])
 
         self.assertEqual(0, result)
-        self.assertIn("Haiku Atlas CLI Reference", output.getvalue())
-        self.assertIn("atlas-indexer", output.getvalue())
+        self.assertIn("Haiku Atlas", output.getvalue())
+        self.assertIn("atlas-indexer SOURCE                  build/update the index", output.getvalue())
 
     def test_query_help_prints_cli_reference(self) -> None:
         output = StringIO()
@@ -28,8 +28,8 @@ class CliTests(unittest.TestCase):
             result = query_main(["help"])
 
         self.assertEqual(0, result)
-        self.assertIn("Haiku Atlas CLI Reference", output.getvalue())
-        self.assertIn("atlas-query", output.getvalue())
+        self.assertIn("Haiku Atlas", output.getvalue())
+        self.assertIn("atlas search NAME                     find symbols", output.getvalue())
 
     def test_indexer_bootstrap_initializes_database(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -113,6 +113,23 @@ class CliTests(unittest.TestCase):
                 result = indexer_main(
                     ["--db", str(db_path), "--haiku-source", str(haiku_source)]
                 )
+
+            self.assertEqual(0, result)
+            self.assertIn("scanned=1", output.getvalue())
+            self.assertIn(f"source={headers}", output.getvalue())
+
+    def test_indexer_source_auto_detects_headers_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            haiku_source = root / "haiku"
+            headers = haiku_source / "headers"
+            headers.mkdir(parents=True)
+            (headers / "View.h").write_text("class BView {};", encoding="utf-8")
+            output = StringIO()
+
+            with redirect_stdout(output):
+                result = indexer_main(["--db", str(db_path), str(haiku_source)])
 
             self.assertEqual(0, result)
             self.assertIn("scanned=1", output.getvalue())

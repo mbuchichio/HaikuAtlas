@@ -7,7 +7,7 @@ This document keeps the operational plan separate from the spec/seed.
 - [x] Confirm v0 stack: Python 3.10+, SQLite, CLI-first, decoupled UI.
 - [ ] Confirm v0 scope: heuristic parser, incremental index, name search.
 - [x] Define input policy: installed SDK, full source tree, or both.
-- [x] Lock project name and binary names (atlas-indexer, atlas-query).
+- [x] Lock project name and binary names (atlas-indexer, atlas).
 
 ## 2. Week 1 - Project Bootstrap
 
@@ -34,8 +34,8 @@ This document keeps the operational plan separate from the spec/seed.
 - [x] Extract simple signatures for public methods and constructors/destructors.
 - [x] Store methods in symbols and contains relations.
 - [x] Implement name search (class/method) with simple ranking.
-- [x] Add atlas-query search "BView".
-- [x] Add atlas-query show "BView" for node detail.
+- [x] Add atlas search "BView".
+- [x] Add atlas show "BView" for node detail.
 
 ## 5. Week 4 - Quality and DX
 
@@ -50,7 +50,7 @@ This document keeps the operational plan separate from the spec/seed.
 
 - [ ] Choose v0 frontend (TUI or local web) that consumes SQLite.
 - [ ] Show kit browser and node detail panel.
-- [ ] Implement search box connected to atlas-query/SQL queries.
+- [ ] Implement search box connected to atlas/SQL queries.
 - [ ] Implement basic history (back/forward/recent).
 - [ ] Validate on Linux and Windows with the same index.
 

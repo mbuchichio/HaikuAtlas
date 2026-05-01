@@ -94,6 +94,12 @@ class ParserTests(unittest.TestCase):
             [symbol.qualified_name for symbol in symbols],
         )
 
+    def test_parse_header_symbols_preserves_qualified_type_names(self) -> None:
+        symbols = parse_header_symbols("class BView::Private {};")
+
+        self.assertEqual("Private", symbols[0].name)
+        self.assertEqual("BView::Private", symbols[0].qualified_name)
+
 
 if __name__ == "__main__":
     unittest.main()

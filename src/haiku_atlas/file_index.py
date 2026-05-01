@@ -62,6 +62,11 @@ def update_file_index(
     headers = scan_header_files(source_root)
     scanned_by_path = {header.path: header for header in headers}
 
+    if full:
+        connection.execute("DELETE FROM relations")
+        connection.execute("DELETE FROM symbols")
+        connection.execute("DELETE FROM files")
+
     existing_rows = connection.execute("SELECT path, mtime, size FROM files").fetchall()
     existing_by_path = {path: (mtime, size) for path, mtime, size in existing_rows}
 
@@ -146,7 +151,7 @@ def _insert_symbol(
     if symbol.parent_qualified_name is not None:
         parent_id = _get_symbol_id(connection, symbol.parent_qualified_name)
 
-    cursor = connection.execute(
+    connection.execute(
         """
         INSERT INTO symbols (
             kind,
@@ -182,15 +187,9 @@ def _insert_symbol(
             symbol.raw_declaration,
         ),
     )
-    symbol_id = cursor.lastrowid
-    if symbol_id == 0:
-        row = connection.execute(
-            "SELECT id FROM symbols WHERE qualified_name = ?",
-            (symbol.qualified_name,),
-        ).fetchone()
-        if row is None:
-            return
-        symbol_id = int(row[0])
+    symbol_id = _get_symbol_id(connection, symbol.qualified_name)
+    if symbol_id is None:
+        return
 
     _insert_relation(connection, symbol_id, "defined_in", file_path)
     if parent_id is not None:

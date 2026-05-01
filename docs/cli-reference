@@ -1,160 +1,28 @@
-Haiku Atlas CLI Reference
-=========================
+Haiku Atlas
 
-Functional reference for the Haiku Atlas command line tools.
+atlas-indexer SOURCE                  build/update the index
+atlas-indexer --full SOURCE           rebuild the index
 
-Tools
------
+atlas search NAME                     find symbols
+atlas show NAME                       show one symbol
+atlas dump-symbols                    print all symbols
+atlas dump-kits                       print all kits
 
-- atlas-indexer: builds or updates an Atlas SQLite index.
-- atlas-query: reads an Atlas SQLite index.
+atlas-indexer help                    print this help
+atlas help                            print this help
 
-Common Option
--------------
+SOURCE examples
 
---db PATH
+/boot/system/develop/headers          installed Haiku headers
+/boot/home/haiku                      Haiku source checkout
+~/src/haiku                           Haiku source checkout on Linux
+~/src/haiku/headers                   Haiku headers on Linux
+tests/fixtures/simple_api             test fixture
 
-SQLite index path.
+Linux repo examples
 
-Default:
+atlas-indexer ~/src/haiku             index headers from a Haiku checkout
+atlas search BView                    search the indexed API
+atlas show BView                      show one API node
 
-    data/haiku-atlas.sqlite3
-
-atlas-indexer
--------------
-
-    atlas-indexer [--db PATH] [--full | --incremental] [--sdk PATH | --haiku-source PATH | PATH]
-    atlas-indexer help
-
-Verbs / Modes
-
---full
-
-Force known headers to be reindexed.
-
---incremental
-
-Index new/changed headers, remove deleted headers, keep unchanged headers.
-
-No mode:
-
-    atlas-indexer --db data/haiku-atlas.sqlite3
-
-Initialize the database only.
-
-Inputs
-
---sdk /boot/system/develop/headers
-
-Use an installed Haiku SDK header root.
-
---haiku-source /boot/home/haiku
-
-Use a Haiku source checkout. Currently scans:
-
-    /boot/home/haiku/headers
-
-    atlas-indexer /path/to/headers
-
-Use a header root directly.
-
-Examples
-
-    atlas-indexer --db data/haiku-atlas.sqlite3 --sdk /boot/system/develop/headers
-
-    atlas-indexer --db data/haiku-atlas.sqlite3 --full --haiku-source /boot/home/haiku
-
-    atlas-indexer --db /tmp/atlas.sqlite3 --incremental tests/fixtures/simple_api
-
-Output
-
-    atlas-indexer: incremental scanned=1 new=1 changed=0 deleted=0 unchanged=0 db=/tmp/atlas.sqlite3 source=tests/fixtures/simple_api
-
-Fields:
-
-- scanned: header files found.
-- new: files inserted into the index.
-- changed: files reindexed.
-- deleted: files removed from the index.
-- unchanged: files reused from cache.
-
-atlas-query
------------
-
-    atlas-query [--db PATH] COMMAND
-
-search
-
-    atlas-query --db data/haiku-atlas.sqlite3 search BView
-
-Search symbols by name.
-
-Output:
-
-    class	BView	View.h:1
-    method	BView::Draw	View.h:3
-
-Columns:
-
-    kind	qualified_name	location
-
-show
-
-    atlas-query --db data/haiku-atlas.sqlite3 show BView
-
-Show one symbol.
-
-Output:
-
-    BView
-    Kind: class
-    Qualified: BView
-    Header: View.h:1
-    Declaration: class BView : public BHandler {
-    Relations:
-      contains: BView::BView
-      contains: BView::Draw
-      defined_in: View.h
-      inherits: BHandler
-
-help
-
-    atlas-query help
-
-Print this reference.
-
-dump-symbols
-
-    atlas-query --db data/haiku-atlas.sqlite3 dump-symbols
-
-Print all indexed symbols.
-
-Output:
-
-    class	BView
-    constructor	BView::BView
-    method	BView::Draw
-    enum	orientation
-    struct	rgb_color
-
-Columns:
-
-    kind	qualified_name
-
-dump-kits
-
-    atlas-query --db data/haiku-atlas.sqlite3 dump-kits
-
-Print indexed kits.
-
-Output:
-
-    name	display_name
-
-Currently empty until kit detection is implemented.
-
-Exit Codes
-----------
-
-- 0: command completed.
-- 1: atlas-query show did not find the requested symbol.
+default database                      db/haiku-atlas.sqlite3

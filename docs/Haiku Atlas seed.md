@@ -707,7 +707,7 @@ Start with a portable CLI and SQLite index:
 - Python 3.10+
 - SQLite
 - atlas-indexer
-- atlas-query
+- atlas
 
 The UI stays decoupled. It can later become a TUI, a local web UI, or a native Haiku UI without forcing a rewrite of the indexer.
 
@@ -717,7 +717,7 @@ The UI stays decoupled. It can later become a TUI, a local web UI, or a native H
 atlas-indexer
   -> generates api-index.sqlite
 
-atlas-query / future UI
+atlas / future UI
   -> consumes api-index.sqlite
 ```
 
@@ -748,14 +748,14 @@ Options:
 - --dump-kits
 - --verbose
 
-### atlas-query
+### atlas
 
 Usage:
 
 ```bash
-atlas-query --db api-index.sqlite search BView
-atlas-query --db api-index.sqlite show BView
-atlas-query --db api-index.sqlite dump-symbols
+atlas search BView
+atlas show BView
+atlas dump-symbols
 ```
 
 ## 18. First Canonical Nodes to Test
@@ -847,8 +847,8 @@ Related:
 
 ### Week 2 - Minimal Query Layer
 
-- atlas-query search
-- atlas-query show
+- atlas search
+- atlas show
 - dump symbols
 - dump kits
 - load index

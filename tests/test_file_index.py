@@ -49,7 +49,7 @@ class FileIndexTests(unittest.TestCase):
             self.assertEqual(("View.h",), third.changed)
             self.assertEqual(("View.h",), fourth.deleted)
 
-    def test_full_index_marks_existing_headers_changed(self) -> None:
+    def test_full_index_rebuilds_existing_headers(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             db_path = root / "atlas.sqlite3"
@@ -62,7 +62,7 @@ class FileIndexTests(unittest.TestCase):
                 update_file_index(connection, source)
                 result = update_file_index(connection, source, full=True)
 
-            self.assertEqual(("View.h",), result.changed)
+            self.assertEqual(("View.h",), result.new)
 
     def test_update_file_index_stores_symbols_and_relations(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -170,6 +170,31 @@ class FileIndexTests(unittest.TestCase):
                 count = connection.execute("SELECT COUNT(*) FROM symbols").fetchone()[0]
 
             self.assertEqual(0, count)
+
+    def test_full_reindex_rebuilds_symbol_names_without_broken_relations(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "source"
+            source.mkdir()
+            header = source / "View.h"
+            header.write_text("class BView : public BHandler {};", encoding="utf-8")
+
+            initialize_database(db_path)
+            with sqlite3.connect(db_path) as connection:
+                update_file_index(connection, source)
+                header.write_text("class BView : public BHandler { public: void Draw(); };", encoding="utf-8")
+                update_file_index(connection, source, full=True)
+                relations = connection.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM relations
+                    JOIN symbols ON symbols.id = relations.source_symbol_id
+                    WHERE symbols.qualified_name = 'BView'
+                    """
+                ).fetchone()[0]
+
+            self.assertGreater(relations, 0)
 
 
 if __name__ == "__main__":

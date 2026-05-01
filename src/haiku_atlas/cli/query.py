@@ -12,12 +12,12 @@ from haiku_atlas.query import get_symbol_detail, search_symbols
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="atlas-query")
+    parser = argparse.ArgumentParser(prog="atlas")
     parser.add_argument(
         "--db",
         type=Path,
         default=DEFAULT_DB_PATH,
-        help=f"SQLite index path (default: {DEFAULT_DB_PATH})",
+        help=argparse.SUPPRESS,
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -60,7 +60,7 @@ def main(argv: list[str] | None = None) -> int:
         with sqlite3.connect(args.db) as connection:
             detail = get_symbol_detail(connection, args.name)
         if detail is None:
-            print(f"atlas-query: symbol not found: {args.name}")
+            print(f"atlas: symbol not found: {args.name}")
             return 1
 
         print(detail.display_name)
