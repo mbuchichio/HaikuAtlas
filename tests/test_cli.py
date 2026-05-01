@@ -95,6 +95,18 @@ class CliTests(unittest.TestCase):
                 open_browser=True,
             )
 
+    def test_query_without_arguments_opens_web_by_default(self) -> None:
+        with patch("haiku_atlas.cli.query.serve") as serve:
+            result = query_main([])
+
+        self.assertEqual(0, result)
+        serve.assert_called_once_with(
+            Path("db/haiku-atlas.sqlite3"),
+            host="127.0.0.1",
+            port=8765,
+            open_browser=True,
+        )
+
     def test_query_web_can_skip_browser_open(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             db_path = Path(directory) / "atlas.sqlite3"
@@ -125,6 +137,28 @@ class CliTests(unittest.TestCase):
             self.assertEqual(0, result)
             self.assertIn("scanned=1", output.getvalue())
             self.assertIn("new=1", output.getvalue())
+
+    def test_indexer_without_source_full_reindexes_stored_source_path(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "headers"
+            source.mkdir()
+            (source / "View.h").write_text("class BView {};", encoding="utf-8")
+
+            with redirect_stdout(StringIO()):
+                first = indexer_main(["--db", str(db_path), str(source)])
+
+            output = StringIO()
+            with redirect_stdout(output):
+                second = indexer_main(["--db", str(db_path)])
+
+            self.assertEqual(0, first)
+            self.assertEqual(0, second)
+            self.assertIn("full", output.getvalue())
+            self.assertIn("new=1", output.getvalue())
+            self.assertIn("unchanged=0", output.getvalue())
+            self.assertIn(f"source={source}", output.getvalue())
 
     def test_indexer_verbose_prints_changed_paths(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -66,6 +66,20 @@ def resolve_source_path(args: argparse.Namespace) -> Path | None:
     return args.source
 
 
+def has_explicit_source(args: argparse.Namespace) -> bool:
+    return args.sdk is not None or args.haiku_source is not None or args.source is not None
+
+
+def get_stored_source_path(db_path: Path) -> Path | None:
+    with sqlite3.connect(db_path) as connection:
+        row = connection.execute(
+            "SELECT value FROM settings WHERE key = 'source_path'"
+        ).fetchone()
+    if row is None:
+        return None
+    return Path(row[0])
+
+
 def main(argv: list[str] | None = None) -> int:
     effective_argv = sys.argv[1:] if argv is None else argv
     if effective_argv == ["help"]:
@@ -76,7 +90,12 @@ def main(argv: list[str] | None = None) -> int:
     initialize_database(args.db)
 
     source_path = resolve_source_path(args)
-    mode = "full" if args.full else "incremental" if source_path is not None else "bootstrap"
+    using_stored_source = False
+    if source_path is None and not has_explicit_source(args):
+        source_path = get_stored_source_path(args.db)
+        using_stored_source = source_path is not None
+    full = args.full or using_stored_source
+    mode = "full" if full else "incremental" if source_path is not None else "bootstrap"
     source = str(source_path) if source_path else "(not set)"
 
     if source_path is None:
@@ -84,7 +103,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     with sqlite3.connect(args.db) as connection:
-        result = update_file_index(connection, source_path, full=args.full)
+        result = update_file_index(connection, source_path, full=full)
 
     print(
         "atlas-indexer: "

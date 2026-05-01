@@ -35,6 +35,18 @@ class SymbolDetail:
     line_end: int | None
     raw_declaration: str | None
     relations: tuple[tuple[str, str], ...]
+    docs: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True)
+class ContainedSymbol:
+    kind: str
+    qualified_name: str
+    display_name: str
+    file_path: str | None
+    line_start: int | None
+    raw_declaration: str | None
+    docs: tuple[tuple[str, str], ...]
 
 
 @dataclass(frozen=True)
@@ -42,6 +54,7 @@ class SymbolPage:
     detail: SymbolDetail
     inherits: tuple[str, ...]
     methods: tuple[str, ...]
+    contained_symbols: tuple[ContainedSymbol, ...]
     other_relations: tuple[tuple[str, str], ...]
 
 
@@ -275,6 +288,15 @@ def get_symbol_detail(connection: sqlite3.Connection, name: str) -> SymbolDetail
         (symbol_id,),
     ).fetchall()
     relations = tuple((relation_type, target or "") for relation_type, target in relation_rows)
+    doc_rows = connection.execute(
+        """
+        SELECT source, body
+        FROM docs
+        WHERE symbol_id = ?
+        ORDER BY source
+        """,
+        (symbol_id,),
+    ).fetchall()
 
     return SymbolDetail(
         kind=kind,
@@ -287,6 +309,7 @@ def get_symbol_detail(connection: sqlite3.Connection, name: str) -> SymbolDetail
         line_end=line_end,
         raw_declaration=raw,
         relations=relations,
+        docs=tuple((source, body) for source, body in doc_rows),
     )
 
 
@@ -312,5 +335,60 @@ def get_symbol_page(connection: sqlite3.Connection, name: str) -> SymbolPage | N
         detail=detail,
         inherits=tuple(inherits),
         methods=tuple(methods),
+        contained_symbols=_list_contained_symbols(connection, detail.qualified_name),
         other_relations=tuple(other_relations),
     )
+
+
+def _list_contained_symbols(
+    connection: sqlite3.Connection,
+    parent_qualified_name: str,
+) -> tuple[ContainedSymbol, ...]:
+    rows = connection.execute(
+        """
+        SELECT
+            child.id,
+            child.kind,
+            child.qualified_name,
+            child.display_name,
+            files.path,
+            child.line_start,
+            child.raw_declaration
+        FROM symbols parent
+        JOIN symbols child ON child.parent_id = parent.id
+        LEFT JOIN files ON files.id = child.file_id
+        WHERE parent.qualified_name = ?
+        ORDER BY
+            CASE child.kind
+                WHEN 'constructor' THEN 0
+                WHEN 'destructor' THEN 1
+                WHEN 'method' THEN 2
+                ELSE 3
+            END,
+            child.qualified_name
+        """,
+        (parent_qualified_name,),
+    ).fetchall()
+    contained: list[ContainedSymbol] = []
+    for symbol_id, kind, qualified_name, display_name, file_path, line_start, raw in rows:
+        doc_rows = connection.execute(
+            """
+            SELECT source, body
+            FROM docs
+            WHERE symbol_id = ?
+            ORDER BY source
+            """,
+            (symbol_id,),
+        ).fetchall()
+        contained.append(
+            ContainedSymbol(
+                kind=kind,
+                qualified_name=qualified_name,
+                display_name=display_name,
+                file_path=file_path,
+                line_start=line_start,
+                raw_declaration=raw,
+                docs=tuple((source, body) for source, body in doc_rows),
+            )
+        )
+    return tuple(contained)

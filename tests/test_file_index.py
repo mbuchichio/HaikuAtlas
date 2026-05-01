@@ -220,6 +220,37 @@ class FileIndexTests(unittest.TestCase):
                 relations,
             )
 
+    def test_update_file_index_stores_source_context_docs(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "source"
+            source.mkdir()
+            (source / "Message.h").write_text(
+                """
+                class BMessage {
+                public:
+                    // Replying
+                    status_t SendReply(uint32 command);
+                };
+                """,
+                encoding="utf-8",
+            )
+
+            initialize_database(db_path)
+            with sqlite3.connect(db_path) as connection:
+                update_file_index(connection, source)
+                docs = connection.execute(
+                    """
+                    SELECT docs.source, docs.body
+                    FROM docs
+                    JOIN symbols ON symbols.id = docs.symbol_id
+                    WHERE symbols.qualified_name = 'BMessage::SendReply'
+                    """
+                ).fetchall()
+
+            self.assertEqual([("source_context", "Replying")], docs)
+
     def test_update_file_index_removes_symbols_for_deleted_headers(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

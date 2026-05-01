@@ -46,6 +46,7 @@ class ParsedSymbol:
     raw_declaration: str
     inherits: tuple[str, ...] = ()
     parent_qualified_name: str | None = None
+    source_context: str | None = None
 
 
 def parse_header_symbols(source: str) -> list[ParsedSymbol]:
@@ -56,10 +57,17 @@ def parse_header_symbols(source: str) -> list[ParsedSymbol]:
     type_brace_depth = 0
     pending_method_lines: list[str] = []
     pending_method_start = 0
+    current_section: str | None = None
 
     for line_number, line in enumerate(source.splitlines(), start=1):
         stripped = line.strip()
-        if not stripped or stripped.startswith(("#", "//", "*")):
+        if current_type is not None and stripped.startswith("//"):
+            section = _parse_section_comment(stripped)
+            if section:
+                current_section = section
+            continue
+
+        if not stripped or stripped.startswith(("#", "*")):
             continue
 
         if current_type is not None:
@@ -88,6 +96,7 @@ def parse_header_symbols(source: str) -> list[ParsedSymbol]:
                         pending_method_start,
                         line_number,
                         current_type,
+                        current_section,
                     )
                     if method is not None:
                         symbols.append(method)
@@ -100,6 +109,7 @@ def parse_header_symbols(source: str) -> list[ParsedSymbol]:
                 current_access = None
                 pending_method_lines = []
                 pending_method_start = 0
+                current_section = None
             continue
 
         type_match = TYPE_PATTERN.match(line)
@@ -122,6 +132,7 @@ def parse_header_symbols(source: str) -> list[ParsedSymbol]:
             if type_match.group("body") == "{" and type_brace_depth > 0:
                 current_type = symbol
                 current_access = "public" if kind == "struct" else "private"
+                current_section = None
             continue
 
         enum_match = ENUM_PATTERN.match(line)
@@ -166,11 +177,23 @@ def _looks_like_method_start(line: str) -> bool:
     return METHOD_START_PATTERN.match(line) is not None
 
 
+def _parse_section_comment(stripped_line: str) -> str | None:
+    text = stripped_line.removeprefix("//").strip()
+    if not text:
+        return None
+    if text.startswith(("#", "NOTE:", "TODO", "FIXME")):
+        return None
+    if len(text) > 80:
+        return None
+    return text.rstrip(".")
+
+
 def _parse_method(
     line: str,
     line_start: int,
     line_end: int,
     parent: ParsedSymbol,
+    source_context: str | None,
 ) -> ParsedSymbol | None:
     stripped = line.strip()
     if stripped.startswith(("typedef ", "using ", "return ")):
@@ -196,6 +219,7 @@ def _parse_method(
         line_end=line_end,
         raw_declaration=_normalize_declaration(stripped),
         parent_qualified_name=parent.qualified_name,
+        source_context=source_context,
     )
 
 

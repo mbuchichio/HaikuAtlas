@@ -11,8 +11,9 @@ import webbrowser
 
 from haiku_atlas.db import initialize_database
 from haiku_atlas.query import (
+    ContainedSymbol,
+    KitSymbol,
     get_index_status,
-    get_symbol_detail,
     get_symbol_page,
     list_kit_symbols,
     list_kits,
@@ -59,7 +60,10 @@ def _make_handler(db_path: Path) -> type[BaseHTTPRequestHandler]:
             self.send_response(status_code)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
-            self.wfile.write(body.encode("utf-8"))
+            try:
+                self.wfile.write(body.encode("utf-8"))
+            except BrokenPipeError:
+                return
 
         def log_message(self, format: str, *args: object) -> None:
             return
@@ -109,9 +113,12 @@ def _render_home(connection: sqlite3.Connection) -> str:
         {_search_form()}
       </section>
       <section class="list">
-        <h2>Kits</h2>
-        {kit_items}
+        <section class="group">
+          <h2>Kits</h2>
+          {kit_items}
+        </section>
       </section>
+      {_recent_section()}
     </main>
     """
     return _page("Haiku Atlas", body)
@@ -152,13 +159,7 @@ def _render_kit(connection: sqlite3.Connection, kit_name: str) -> tuple[int, str
         return 404, _page("Kit not found", "<main><h1>Kit not found</h1></main>")
 
     kit, symbols = result
-    items = "\n".join(
-        f'<a class="row" href="/symbol/{quote(symbol.qualified_name)}">'
-        f"<span>{escape(symbol.qualified_name)}</span>"
-        f"<small>{escape(_location(symbol.file_path, symbol.line_start))}</small>"
-        "</a>"
-        for symbol in symbols
-    )
+    grouped_symbols = _render_kit_symbol_groups(symbols)
     hidden = kit.top_level_symbol_count - len(symbols)
     more = f'<p class="empty">{hidden} more not shown.</p>' if hidden > 0 else ""
     body = f"""
@@ -172,7 +173,7 @@ def _render_kit(connection: sqlite3.Connection, kit_name: str) -> tuple[int, str
         {_search_form()}
       </section>
       <section class="list">
-        {items}
+        {grouped_symbols}
         {more}
       </section>
     </main>
@@ -186,8 +187,9 @@ def _render_symbol(connection: sqlite3.Connection, symbol_name: str) -> tuple[in
         return 404, _page("Symbol not found", "<main><h1>Symbol not found</h1></main>")
 
     detail = page.detail
-    method_items = _render_method_rows(connection, page.methods)
+    contained_groups = _render_contained_groups(page.contained_symbols)
     inherits = ", ".join(escape(base) for base in page.inherits)
+    source_context = _doc_body(detail.docs, "source_context")
     body = f"""
     <main>
       <section class="toolbar">
@@ -203,30 +205,73 @@ def _render_symbol(connection: sqlite3.Connection, symbol_name: str) -> tuple[in
           <dt>qualified</dt><dd>{escape(detail.qualified_name)}</dd>
           <dt>location</dt><dd>{escape(_location(detail.file_path, detail.line_start))}</dd>
           <dt>inherits</dt><dd>{inherits or "none"}</dd>
+          <dt>context</dt><dd>{escape(source_context or "none")}</dd>
         </dl>
         {_declaration_block(detail.raw_declaration)}
       </section>
       <section class="list">
-        <h2>Methods</h2>
-        {method_items or '<p class="empty">No child methods indexed.</p>'}
+        {contained_groups or '<p class="empty">No child symbols indexed.</p>'}
       </section>
     </main>
     """
-    return 200, _page(detail.display_name, body)
+    return 200, _page(
+        detail.display_name,
+        body,
+        recent_title=detail.display_name,
+        recent_url=f"/symbol/{quote(detail.qualified_name)}",
+    )
 
 
-def _render_method_rows(connection: sqlite3.Connection, methods: tuple[str, ...]) -> str:
+def _render_kit_symbol_groups(symbols: tuple[KitSymbol, ...]) -> str:
+    sections = [
+        ("class", "Classes"),
+        ("struct", "Structs"),
+        ("enum", "Enums"),
+    ]
+    rendered: list[str] = []
+    for kind, title in sections:
+        rows = [symbol for symbol in symbols if symbol.kind == kind]
+        if not rows:
+            continue
+        items = "\n".join(
+            f'<a class="row" href="/symbol/{quote(symbol.qualified_name)}">'
+            f"<span>{escape(symbol.qualified_name)}</span>"
+            f"<small>{escape(_location(symbol.file_path, symbol.line_start))}</small>"
+            "</a>"
+            for symbol in rows
+        )
+        rendered.append(f'<section class="group"><h2>{title}</h2>{items}</section>')
+    return "\n".join(rendered)
+
+
+def _render_contained_groups(symbols: tuple[ContainedSymbol, ...]) -> str:
+    sections = [
+        ("constructor", "Constructors"),
+        ("destructor", "Destructors"),
+        ("method", "Methods"),
+    ]
+    rendered: list[str] = []
+    for kind, title in sections:
+        rows = tuple(symbol for symbol in symbols if symbol.kind == kind)
+        if not rows:
+            continue
+        rendered.append(f'<section class="group"><h2>{title}</h2>{_render_method_rows(rows)}</section>')
+    return "\n".join(rendered)
+
+
+def _render_method_rows(methods: tuple[ContainedSymbol, ...]) -> str:
     rows: list[str] = []
     for method in methods:
-        detail = get_symbol_detail(connection, method)
-        display = method.rsplit("::", 1)[-1]
-        subtitle = detail.raw_declaration if detail and detail.raw_declaration else method
-        location = _location(detail.file_path, detail.line_start) if detail else ""
+        display = method.qualified_name.rsplit("::", 1)[-1]
+        subtitle = method.raw_declaration or method.qualified_name
+        location = _location(method.file_path, method.line_start)
+        context = _doc_body(method.docs, "source_context")
+        meta = " · ".join(part for part in (context, location) if part)
         rows.append(
-            f'<a class="method-row" href="/symbol/{quote(method)}">'
+            f'<a class="method-row" href="/symbol/{quote(method.qualified_name)}">'
             f'<span class="method-name">{escape(display)}</span>'
             f'<span class="method-signature">{escape(subtitle)}</span>'
-            f'<small>{escape(location)}</small>'
+            f'<small>{escape(meta)}</small>'
             "</a>"
         )
     return "\n".join(rows)
@@ -241,10 +286,28 @@ def _search_form(term: str = "") -> str:
     )
 
 
+def _recent_section() -> str:
+    return """
+      <section class="list recent" data-recent-section hidden>
+        <section class="group">
+          <h2>Recent</h2>
+          <div data-recent-list></div>
+        </section>
+      </section>
+    """
+
+
 def _declaration_block(raw_declaration: str | None) -> str:
     if not raw_declaration:
         return ""
     return f"<pre>{escape(raw_declaration)}</pre>"
+
+
+def _doc_body(docs: tuple[tuple[str, str], ...], source: str) -> str | None:
+    for doc_source, body in docs:
+        if doc_source == source:
+            return body
+    return None
 
 
 def _search_subtitle(kind: str, kit: str | None, file_path: str | None) -> str:
@@ -264,7 +327,19 @@ def _location(file_path: str | None, line_start: int | None) -> str:
     return f"{file_path}:{line_start}"
 
 
-def _page(title: str, body: str) -> str:
+def _page(
+    title: str,
+    body: str,
+    *,
+    recent_title: str | None = None,
+    recent_url: str | None = None,
+) -> str:
+    recent_attrs = ""
+    if recent_title and recent_url:
+        recent_attrs = (
+            f' data-recent-title="{escape(recent_title)}"'
+            f' data-recent-url="{escape(recent_url)}"'
+        )
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -294,6 +369,22 @@ def _page(title: str, body: str) -> str:
     h2 {{ margin: 0 0 12px; font-size: 18px; }}
     p {{ margin: 8px 0 0; color: var(--muted); }}
     a {{ color: inherit; text-decoration: none; }}
+    .nav {{
+      display: flex;
+      gap: 8px;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 14px 20px 0;
+    }}
+    .nav button, .nav a {{
+      min-height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 5px 9px;
+      background: var(--panel);
+      color: var(--ink);
+      font: inherit;
+    }}
     .toolbar {{
       display: flex;
       gap: 18px;
@@ -324,14 +415,25 @@ def _page(title: str, body: str) -> str:
       font-weight: 700;
     }}
     .list, .detail {{ margin-top: 22px; }}
+    .group + .group {{ margin-top: 30px; }}
+    .group h2 {{
+      margin-bottom: 10px;
+      padding-top: 2px;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }}
     .row {{
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 16px;
       align-items: baseline;
-      padding: 11px 0;
-      border-bottom: 1px solid var(--line);
+      padding: 7px 8px;
+      border-radius: 6px;
     }}
+    .row:hover, .method-row:hover {{ background: rgba(11, 111, 124, 0.08); }}
+    .group .row, .group .method-row {{ margin-left: 18px; }}
     .row span {{ overflow-wrap: anywhere; font-weight: 700; }}
     small {{ color: var(--muted); text-align: right; }}
     dl {{
@@ -355,8 +457,8 @@ def _page(title: str, body: str) -> str:
       grid-template-columns: 190px minmax(0, 1fr) auto;
       gap: 14px;
       align-items: baseline;
-      padding: 8px 0;
-      border-bottom: 1px solid var(--line);
+      padding: 7px 8px;
+      border-radius: 6px;
     }}
     .method-name {{ color: var(--accent); font-weight: 700; overflow-wrap: anywhere; }}
     .method-signature {{
@@ -364,22 +466,72 @@ def _page(title: str, body: str) -> str:
       font-size: 13px;
       overflow-wrap: anywhere;
     }}
+    .recent .row {{ grid-template-columns: minmax(0, 1fr) auto; }}
     .empty {{ color: var(--muted); }}
     @media (max-width: 720px) {{
+      .nav {{ padding: 10px 14px 0; }}
       main {{ padding: 20px 14px 36px; }}
       h1 {{ font-size: 26px; }}
       .toolbar {{ display: block; }}
       .search {{ margin-top: 16px; min-width: 0; }}
       .row {{ grid-template-columns: 1fr; gap: 2px; }}
       .method-row {{ grid-template-columns: 1fr; gap: 2px; }}
+      .group .row, .group .method-row {{ margin-left: 0; }}
       small {{ text-align: left; }}
       dl {{ grid-template-columns: 1fr; gap: 2px; }}
       dd {{ margin-bottom: 8px; }}
     }}
   </style>
 </head>
-<body>
+<body{recent_attrs}>
+<nav class="nav">
+  <button type="button" data-back>Back</button>
+  <button type="button" data-forward>Forward</button>
+  <a href="/">Home</a>
+</nav>
 {body}
+<script>
+(function () {{
+  const maxRecent = 12;
+  const key = "haiku-atlas:recent";
+  const readRecent = () => {{
+    try {{
+      return JSON.parse(localStorage.getItem(key) || "[]");
+    }} catch (_) {{
+      return [];
+    }}
+  }};
+  const writeRecent = (items) => localStorage.setItem(key, JSON.stringify(items.slice(0, maxRecent)));
+  const currentTitle = document.body.dataset.recentTitle;
+  const currentUrl = document.body.dataset.recentUrl;
+  if (currentTitle && currentUrl) {{
+    const next = [{{ title: currentTitle, url: currentUrl }}, ...readRecent().filter((item) => item.url !== currentUrl)];
+    writeRecent(next);
+  }}
+  document.querySelector("[data-back]")?.addEventListener("click", () => history.back());
+  document.querySelector("[data-forward]")?.addEventListener("click", () => history.forward());
+  const section = document.querySelector("[data-recent-section]");
+  const list = document.querySelector("[data-recent-list]");
+  if (section && list) {{
+    const items = readRecent();
+    if (items.length > 0) {{
+      section.hidden = false;
+      list.innerHTML = items.map((item) =>
+        `<a class="row" href="${{item.url}}"><span>${{escapeHtml(item.title)}}</span><small>symbol</small></a>`
+      ).join("");
+    }}
+  }}
+  function escapeHtml(value) {{
+    return value.replace(/[&<>"']/g, (char) => ({{
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }}[char]));
+  }}
+}}());
+</script>
 </body>
 </html>
 """

@@ -1,8 +1,10 @@
 Haiku Atlas
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ./atlas-indexer SOURCE            build/update the index
+    ./atlas-indexer                   rebuild the last indexed source
     ./atlas-indexer --full SOURCE     rebuild the index
 
+    ./atlas                          open the local browser UI
     ./atlas search NAME               find symbols
     ./atlas show NAME                 show one symbol
     ./atlas status                    show index status
@@ -28,8 +30,16 @@ SOURCE examples
 Linux repo examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ./atlas-indexer ~/src/haiku       index headers from a Haiku checkout
+    ./atlas-indexer                   rebuild the same checkout later
+    ./atlas                           open the local browser UI
     ./atlas search BView              search the indexed API
     ./atlas show BView                show one API node
     ./atlas web                       open a local browser UI
 
     default database                  db/haiku-atlas.sqlite3
+
+
+Windows
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    atlas-indexer.bat SOURCE          build/update the index
+    atlas.bat web                     open the local browser UI

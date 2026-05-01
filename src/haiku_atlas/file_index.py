@@ -243,6 +243,8 @@ def _insert_symbol(
         _insert_relation(connection, parent_id, "contains", symbol.qualified_name, symbol_id)
     for base in symbol.inherits:
         _insert_relation(connection, symbol_id, "inherits", base)
+    if symbol.source_context:
+        _insert_doc(connection, symbol_id, "source_context", symbol.source_context)
 
 
 def _ensure_kit(connection: sqlite3.Connection, name: str | None) -> int | None:
@@ -292,4 +294,21 @@ def _insert_relation(
         VALUES (?, ?, ?, ?)
         """,
         (source_symbol_id, relation_type, target_symbol_id, target_text),
+    )
+
+
+def _insert_doc(
+    connection: sqlite3.Connection,
+    symbol_id: int,
+    source: str,
+    body: str,
+) -> None:
+    connection.execute(
+        """
+        INSERT INTO docs (symbol_id, source, body)
+        VALUES (?, ?, ?)
+        ON CONFLICT(symbol_id, source) DO UPDATE SET
+            body = excluded.body
+        """,
+        (symbol_id, source, body),
     )

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sqlite3
+import sys
 from pathlib import Path
 
 from haiku_atlas.cli.help import read_cli_reference
@@ -57,7 +58,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    effective_argv = sys.argv[1:] if argv is None else argv
+    if not effective_argv:
+        effective_argv = ["web"]
+    args = build_parser().parse_args(effective_argv)
 
     if args.command == "help":
         print(read_cli_reference(), end="")

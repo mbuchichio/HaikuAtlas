@@ -22,15 +22,27 @@ For a Haiku source checkout on Linux:
 
 ```sh
 ./atlas-indexer ~/src/haiku
-./atlas show BView
+./atlas
+```
+
+After the first index, `./atlas-indexer` rebuilds the last source path.
+
+On Windows, run the `.bat` wrappers from the repository root:
+
+```bat
+atlas-indexer.bat C:\path\to\haiku
+atlas.bat web
 ```
 
 ## Current Commands
 
 - `./atlas-indexer SOURCE`
+- `./atlas-indexer`
 - `./atlas-indexer --full SOURCE`
+- `./atlas`
 - `./atlas search NAME`
 - `./atlas show NAME`
+- `./atlas web`
 - `./atlas help`
 - `./atlas dump-symbols`
 - `./atlas dump-kits`

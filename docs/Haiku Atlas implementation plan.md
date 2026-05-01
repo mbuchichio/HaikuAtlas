@@ -54,7 +54,8 @@ This document keeps the operational plan separate from the spec/seed.
 - [x] Choose v0 frontend (TUI or local web) that consumes SQLite.
 - [x] Show kit browser and node detail panel.
 - [x] Implement search box connected to atlas/SQL queries.
-- [ ] Implement basic history (back/forward/recent).
+- [x] Implement basic history (back/forward/recent).
+- [x] Show source context from nearby header comments.
 - [ ] Validate on Linux and Windows with the same index.
 
 ## 7. Week 6 - v0 Release
@@ -75,7 +76,6 @@ This document keeps the operational plan separate from the spec/seed.
 
 ## 9. Post-v0 Backlog
 
-- [ ] Extract nearby comments as docs per node.
 - [ ] Source path guessing and implementation indexing.
 - [ ] Examples finder (example_uses_symbol).
 - [ ] Persistent bookmarks and recently viewed nodes.

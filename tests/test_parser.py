@@ -171,6 +171,22 @@ class ParserTests(unittest.TestCase):
 
         self.assertEqual(["BView", "BView::Draw"], [symbol.qualified_name for symbol in symbols])
 
+    def test_parse_header_symbols_attaches_section_comments_to_methods(self) -> None:
+        symbols = parse_header_symbols(
+            """
+            class BMessage {
+            public:
+                // Replying
+                status_t SendReply(uint32 command);
+                // Flattening data
+                status_t Flatten(char* buffer, ssize_t size) const;
+            };
+            """
+        )
+
+        self.assertEqual("Replying", symbols[1].source_context)
+        self.assertEqual("Flattening data", symbols[2].source_context)
+
     def test_parse_header_symbols_keeps_space_before_class_body(self) -> None:
         symbols = parse_header_symbols("class BView : public BHandler\t{")
 
