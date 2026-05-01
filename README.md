@@ -14,9 +14,11 @@ separate UI.
 From the repository root:
 
 ```sh
-./atlas-indexer /boot/system/develop/headers
-./atlas search BView
+./atlas setup
 ```
+
+`setup` asks before downloading the Haiku source tree into `sources/haiku`,
+indexes it, then opens Atlas.
 
 For a Haiku source checkout on Linux:
 
@@ -40,6 +42,7 @@ atlas.bat web
 - `./atlas-indexer`
 - `./atlas-indexer --full SOURCE`
 - `./atlas`
+- `./atlas setup`
 - `./atlas search NAME`
 - `./atlas show NAME`
 - `./atlas web`
@@ -55,6 +58,7 @@ and show basic symbol details.
 ## Project Notes
 
 - [CLI reference](docs/cli-reference)
+- [Cross-platform validation](docs/cross-platform-validation.md)
 - [Spec / seed](docs/Haiku%20Atlas%20seed.md)
 - [Implementation plan](docs/Haiku%20Atlas%20implementation%20plan.md)
 

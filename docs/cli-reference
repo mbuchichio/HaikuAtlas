@@ -5,6 +5,7 @@ Haiku Atlas
     ./atlas-indexer --full SOURCE     rebuild the index
 
     ./atlas                          open the local browser UI
+    ./atlas setup                    download Haiku, index it, open Atlas
     ./atlas search NAME               find symbols
     ./atlas show NAME                 show one symbol
     ./atlas status                    show index status
@@ -32,6 +33,7 @@ Linux repo examples
     ./atlas-indexer ~/src/haiku       index headers from a Haiku checkout
     ./atlas-indexer                   rebuild the same checkout later
     ./atlas                           open the local browser UI
+    ./atlas setup                     clone Haiku into sources/haiku
     ./atlas search BView              search the indexed API
     ./atlas show BView                show one API node
     ./atlas web                       open a local browser UI
@@ -42,4 +44,5 @@ Linux repo examples
 Windows
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     atlas-indexer.bat SOURCE          build/update the index
+    atlas.bat setup                   clone Haiku into sources\haiku
     atlas.bat web                     open the local browser UI

@@ -57,6 +57,8 @@ This document keeps the operational plan separate from the spec/seed.
 - [x] Implement basic history (back/forward/recent).
 - [x] Show source context from nearby header comments.
 - [ ] Validate on Linux and Windows with the same index.
+  - [x] Linux flow.
+  - [ ] Windows `.bat` flow.
 
 ## 7. Week 6 - v0 Release
 

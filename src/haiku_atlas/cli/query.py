@@ -16,6 +16,7 @@ from haiku_atlas.query import (
     list_kits,
     search_symbols,
 )
+from haiku_atlas.setup import DEFAULT_SOURCE_PATH, setup_haiku_source
 from haiku_atlas.web import serve
 
 MAX_METHODS_SHOWN = 40
@@ -49,6 +50,11 @@ def build_parser() -> argparse.ArgumentParser:
     web.add_argument("--host", default="127.0.0.1", help=argparse.SUPPRESS)
     web.add_argument("--port", type=int, default=8765, help=argparse.SUPPRESS)
     web.add_argument("--no-open", action="store_true", help=argparse.SUPPRESS)
+
+    setup = subparsers.add_parser("setup", help="Download and index Haiku source.")
+    setup.add_argument("--source", type=Path, default=DEFAULT_SOURCE_PATH, help=argparse.SUPPRESS)
+    setup.add_argument("--yes", action="store_true", help=argparse.SUPPRESS)
+    setup.add_argument("--no-open", action="store_true", help=argparse.SUPPRESS)
 
     subparsers.add_parser("help", help="Print the long Haiku Atlas CLI reference.")
     subparsers.add_parser("dump-symbols", help="Print all indexed symbols.")
@@ -172,6 +178,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "web":
         serve(args.db, host=args.host, port=args.port, open_browser=not args.no_open)
         return 0
+
+    if args.command == "setup":
+        result = setup_haiku_source(
+            db_path=args.db,
+            source_path=args.source,
+            assume_yes=args.yes,
+        )
+        if result == 0 and not args.no_open:
+            serve(args.db)
+        return result
 
     if args.command == "dump-symbols":
         with sqlite3.connect(args.db) as connection:

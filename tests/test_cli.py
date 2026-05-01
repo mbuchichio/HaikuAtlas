@@ -122,6 +122,40 @@ class CliTests(unittest.TestCase):
                 open_browser=False,
             )
 
+    def test_query_setup_runs_setup_then_opens_web(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            db_path = Path(directory) / "atlas.sqlite3"
+            source = Path(directory) / "haiku"
+
+            with (
+                patch("haiku_atlas.cli.query.setup_haiku_source", return_value=0) as setup,
+                patch("haiku_atlas.cli.query.serve") as serve,
+            ):
+                result = query_main(
+                    ["--db", str(db_path), "setup", "--source", str(source), "--yes"]
+                )
+
+            self.assertEqual(0, result)
+            setup.assert_called_once_with(
+                db_path=db_path,
+                source_path=source,
+                assume_yes=True,
+            )
+            serve.assert_called_once_with(db_path)
+
+    def test_query_setup_can_skip_opening_web(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            db_path = Path(directory) / "atlas.sqlite3"
+
+            with (
+                patch("haiku_atlas.cli.query.setup_haiku_source", return_value=0),
+                patch("haiku_atlas.cli.query.serve") as serve,
+            ):
+                result = query_main(["--db", str(db_path), "setup", "--yes", "--no-open"])
+
+            self.assertEqual(0, result)
+            serve.assert_not_called()
+
     def test_indexer_incremental_scans_source_headers(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
