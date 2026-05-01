@@ -11,7 +11,7 @@ KIT_DISPLAY_NAMES = {
     "mail": "Mail Kit",
     "media": "Media Kit",
     "midi": "MIDI Kit",
-    "midi2": "MIDI Kit",
+    "midi2": "MIDI2 Kit",
     "net": "Network Kit",
     "storage": "Storage Kit",
     "support": "Support Kit",

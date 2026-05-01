@@ -23,6 +23,8 @@ class KitTests(unittest.TestCase):
 
     def test_kit_display_name_uses_known_names(self) -> None:
         self.assertEqual("Interface Kit", kit_display_name("interface"))
+        self.assertEqual("MIDI Kit", kit_display_name("midi"))
+        self.assertEqual("MIDI2 Kit", kit_display_name("midi2"))
 
 
 if __name__ == "__main__":

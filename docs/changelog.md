@@ -24,6 +24,10 @@ All notable changes to Haiku Atlas are documented here.
   release database files immediately after CLI, setup, web, and test operations.
 - Updated direct SQLite test helpers to close connections explicitly, preventing
   `TemporaryDirectory` cleanup failures on Windows.
+- Display `midi2` as `MIDI2 Kit` so it no longer appears as a duplicate
+  `MIDI Kit` in kit lists.
+- Parse class and struct definitions whose opening brace is on the following
+  line, fixing missing MIDI2 classes such as `BMidiEndpoint` and `BMidiRoster`.
 
 ### Validated
 

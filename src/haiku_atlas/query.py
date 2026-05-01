@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 import sqlite3
 
+from haiku_atlas.kits import kit_display_name
+
 
 @dataclass(frozen=True)
 class SearchResult:
@@ -100,7 +102,6 @@ def list_kits(connection: sqlite3.Connection) -> list[KitSummary]:
         """
         SELECT
             kits.name,
-            kits.display_name,
             COUNT(symbols.id) AS symbol_count,
             SUM(
                 CASE
@@ -113,17 +114,17 @@ def list_kits(connection: sqlite3.Connection) -> list[KitSummary]:
         FROM kits
         LEFT JOIN symbols ON symbols.kit_id = kits.id
         GROUP BY kits.id
-        ORDER BY kits.display_name
+        ORDER BY kits.display_name, kits.name
         """
     ).fetchall()
     return [
         KitSummary(
             name=name,
-            display_name=display_name,
+            display_name=kit_display_name(name),
             symbol_count=symbol_count,
             top_level_symbol_count=top_level_symbol_count or 0,
         )
-        for name, display_name, symbol_count, top_level_symbol_count in rows
+        for name, symbol_count, top_level_symbol_count in rows
     ]
 
 
@@ -138,7 +139,6 @@ def list_kit_symbols(
         SELECT
             kits.id,
             kits.name,
-            kits.display_name,
             COUNT(symbols.id) AS symbol_count,
             SUM(
                 CASE
@@ -158,7 +158,7 @@ def list_kit_symbols(
     if kit_row is None:
         return None
 
-    kit_id, name, display_name, symbol_count, top_level_symbol_count = kit_row
+    kit_id, name, symbol_count, top_level_symbol_count = kit_row
     rows = connection.execute(
         """
         SELECT symbols.kind, symbols.qualified_name, files.path, symbols.line_start
@@ -191,7 +191,7 @@ def list_kit_symbols(
     return (
         KitSummary(
             name=name,
-            display_name=display_name,
+            display_name=kit_display_name(name),
             symbol_count=symbol_count,
             top_level_symbol_count=top_level_symbol_count or 0,
         ),
@@ -204,7 +204,7 @@ def search_symbols(connection: sqlite3.Connection, term: str, *, limit: int = 20
     pattern = f"%{term}%"
     rows = connection.execute(
         """
-        SELECT s.kind, s.qualified_name, k.display_name, f.path, s.line_start
+        SELECT s.kind, s.qualified_name, k.name, f.path, s.line_start
         FROM symbols s
         LEFT JOIN files f ON f.id = s.file_id
         LEFT JOIN kits k ON k.id = s.kit_id
@@ -225,11 +225,11 @@ def search_symbols(connection: sqlite3.Connection, term: str, *, limit: int = 20
         SearchResult(
             kind=kind,
             qualified_name=qualified_name,
-            kit_display_name=kit_display_name,
+            kit_display_name=kit_display_name(kit_name) if kit_name else None,
             file_path=file_path,
             line_start=line_start,
         )
-        for kind, qualified_name, kit_display_name, file_path, line_start in rows
+        for kind, qualified_name, kit_name, file_path, line_start in rows
     ]
 
 
@@ -243,7 +243,7 @@ def get_symbol_detail(connection: sqlite3.Connection, name: str) -> SymbolDetail
             s.name,
             s.qualified_name,
             s.display_name,
-            k.display_name,
+            k.name,
             f.path,
             s.line_start,
             s.line_end,
@@ -271,7 +271,7 @@ def get_symbol_detail(connection: sqlite3.Connection, name: str) -> SymbolDetail
         symbol_name,
         qualified_name,
         display_name,
-        kit_display,
+        kit_name,
         file_path,
         line_start,
         line_end,
@@ -303,7 +303,7 @@ def get_symbol_detail(connection: sqlite3.Connection, name: str) -> SymbolDetail
         name=symbol_name,
         qualified_name=qualified_name,
         display_name=display_name,
-        kit_display_name=kit_display,
+        kit_display_name=kit_display_name(kit_name) if kit_name else None,
         file_path=file_path,
         line_start=line_start,
         line_end=line_end,

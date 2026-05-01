@@ -57,6 +57,8 @@ def parse_header_symbols(source: str) -> list[ParsedSymbol]:
     type_brace_depth = 0
     pending_method_lines: list[str] = []
     pending_method_start = 0
+    pending_type_match: re.Match[str] | None = None
+    pending_type_line = 0
     current_section: str | None = None
 
     for line_number, line in enumerate(source.splitlines(), start=1):
@@ -69,6 +71,21 @@ def parse_header_symbols(source: str) -> list[ParsedSymbol]:
 
         if not stripped or stripped.startswith(("#", "*")):
             continue
+
+        if pending_type_match is not None:
+            if stripped == "{":
+                symbol = _symbol_from_type_match(pending_type_match, pending_type_line)
+                symbols.append(symbol)
+                type_brace_depth = _brace_delta(line)
+                if type_brace_depth > 0:
+                    current_type = symbol
+                    current_access = "public" if symbol.kind == "struct" else "private"
+                    current_section = None
+                pending_type_match = None
+                pending_type_line = 0
+                continue
+            pending_type_match = None
+            pending_type_line = 0
 
         if current_type is not None:
             access_match = ACCESS_PATTERN.match(line)
@@ -114,25 +131,17 @@ def parse_header_symbols(source: str) -> list[ParsedSymbol]:
 
         type_match = TYPE_PATTERN.match(line)
         if type_match and _is_definition_or_inherited_declaration(type_match):
-            kind = type_match.group(1)
-            qualified_name = type_match.group(2)
-            name = qualified_name.rsplit("::", 1)[-1]
-            bases = _parse_bases(type_match.group("bases") or "")
-            symbol = ParsedSymbol(
-                kind=kind,
-                name=name,
-                qualified_name=qualified_name,
-                line_start=line_number,
-                line_end=line_number,
-                raw_declaration=_normalize_declaration(stripped),
-                inherits=bases,
-            )
+            symbol = _symbol_from_type_match(type_match, line_number)
             symbols.append(symbol)
             type_brace_depth = _brace_delta(line)
             if type_match.group("body") == "{" and type_brace_depth > 0:
                 current_type = symbol
-                current_access = "public" if kind == "struct" else "private"
+                current_access = "public" if symbol.kind == "struct" else "private"
                 current_section = None
+            continue
+        if type_match and _could_be_multiline_type_definition(type_match):
+            pending_type_match = type_match
+            pending_type_line = line_number
             continue
 
         enum_match = ENUM_PATTERN.match(line)
@@ -154,6 +163,26 @@ def parse_header_symbols(source: str) -> list[ParsedSymbol]:
 
 def _is_definition_or_inherited_declaration(match: re.Match[str]) -> bool:
     return match.group("body") == "{"
+
+
+def _could_be_multiline_type_definition(match: re.Match[str]) -> bool:
+    return match.group("body") == "" and not match.string.rstrip().endswith(";")
+
+
+def _symbol_from_type_match(match: re.Match[str], line_number: int) -> ParsedSymbol:
+    kind = match.group(1)
+    qualified_name = match.group(2)
+    name = qualified_name.rsplit("::", 1)[-1]
+    bases = _parse_bases(match.group("bases") or "")
+    return ParsedSymbol(
+        kind=kind,
+        name=name,
+        qualified_name=qualified_name,
+        line_start=line_number,
+        line_end=line_number,
+        raw_declaration=_normalize_declaration(match.string.strip()),
+        inherits=bases,
+    )
 
 
 def _parse_bases(raw_bases: str) -> tuple[str, ...]:

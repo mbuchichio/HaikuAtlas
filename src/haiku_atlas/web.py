@@ -139,13 +139,6 @@ def _render_home(connection: sqlite3.Connection) -> str:
       </section>
       <section class="list">
         <section class="group">
-          <h2>Index</h2>
-          <a class="row" href="/admin/index">
-            <span>Index controls</span>
-            <small>{escape(status.source_path or "no source path")}</small>
-          </a>
-        </section>
-        <section class="group">
           <h2>Kits</h2>
           {kit_items}
         </section>
@@ -153,7 +146,7 @@ def _render_home(connection: sqlite3.Connection) -> str:
       {_recent_section()}
     </main>
     """
-    return _page("Haiku Atlas", body)
+    return _page("Haiku Atlas", body, show_index_nav=True)
 
 
 def _render_index_admin(
@@ -172,7 +165,7 @@ def _render_index_admin(
       <section class="toolbar">
         <div>
           <a class="crumb" href="/">Atlas</a>
-          <h1>Index</h1>
+          <h1>Admin</h1>
           <p>{status.header_count} headers · {status.kit_count} kits · {status.symbol_count} symbols</p>
         </div>
         {_search_form()}
@@ -205,7 +198,7 @@ def _render_index_admin(
       </section>
     </main>
     """
-    return _page("Index", body)
+    return _page("Admin", body)
 
 
 def _handle_index_post(
@@ -501,6 +494,7 @@ def _page(
     *,
     recent_title: str | None = None,
     recent_url: str | None = None,
+    show_index_nav: bool = False,
 ) -> str:
     recent_attrs = ""
     if recent_title and recent_url:
@@ -508,6 +502,7 @@ def _page(
             f' data-recent-title="{escape(recent_title)}"'
             f' data-recent-url="{escape(recent_url)}"'
         )
+    index_nav = '<a class="nav-action" href="/admin/index">Admin</a>' if show_index_nav else ""
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -540,6 +535,7 @@ def _page(
     .nav {{
       display: flex;
       gap: 8px;
+      align-items: center;
       max-width: 1120px;
       margin: 0 auto;
       padding: 14px 20px 0;
@@ -553,6 +549,8 @@ def _page(
       color: var(--ink);
       font: inherit;
     }}
+    .nav-spacer {{ flex: 1; }}
+    .nav-action {{ margin-left: auto; }}
     .toolbar {{
       display: flex;
       gap: 18px;
@@ -667,7 +665,8 @@ def _page(
   <button type="button" data-back>Back</button>
   <button type="button" data-forward>Forward</button>
   <a href="/">Home</a>
-  <a href="/admin/index">Index</a>
+  <span class="nav-spacer"></span>
+  {index_nav}
 </nav>
 {body}
 <script>

@@ -10,6 +10,7 @@ from pathlib import Path
 
 from haiku_atlas.cli.help import read_cli_reference
 from haiku_atlas.db import DEFAULT_DB_PATH, initialize_database
+from haiku_atlas.kits import kit_display_name
 from haiku_atlas.query import (
     get_index_status,
     get_symbol_page,
@@ -201,9 +202,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "dump-kits":
         with closing(sqlite3.connect(args.db)) as connection:
-            rows = connection.execute("SELECT name, display_name FROM kits ORDER BY name").fetchall()
-        for name, display_name in rows:
-            print(f"{name}\t{display_name}")
+            rows = connection.execute("SELECT name FROM kits ORDER BY name").fetchall()
+        for (name,) in rows:
+            print(f"{name}\t{kit_display_name(name)}")
         return 0
 
     raise AssertionError(f"Unhandled command: {args.command}")

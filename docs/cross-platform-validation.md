@@ -4,16 +4,16 @@ This checklist keeps the v0 flow reproducible across Linux and Windows.
 
 ## Linux
 
-Validated on 2026-05-01 with `/home/mario/Dev/haiku`.
+Validated on 2026-05-01 with a local Haiku source checkout.
 
-    ./atlas-indexer /home/mario/Dev/haiku
+    ./atlas-indexer /path/to/haiku
     ./atlas-indexer
     ./atlas status
     ./atlas search BView
     ./atlas show BMessage::SendReply
     ./atlas
 
-Expected:
+Observed:
 
     indexer scans 2627 headers
     atlas-indexer without SOURCE rebuilds the stored source path

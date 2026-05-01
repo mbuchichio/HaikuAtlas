@@ -103,6 +103,23 @@ class ParserTests(unittest.TestCase):
         self.assertEqual("Private", symbols[0].name)
         self.assertEqual("BView::Private", symbols[0].qualified_name)
 
+    def test_parse_header_symbols_detects_type_with_body_on_next_line(self) -> None:
+        symbols = parse_header_symbols(
+            """
+            class BMidiProducer : public BMidiEndpoint
+            {
+            public:
+                status_t Connect(BMidiConsumer* consumer);
+            };
+            """
+        )
+
+        self.assertEqual(
+            ["BMidiProducer", "BMidiProducer::Connect"],
+            [symbol.qualified_name for symbol in symbols],
+        )
+        self.assertEqual(("BMidiEndpoint",), symbols[0].inherits)
+
     def test_parse_header_symbols_normalizes_method_declaration_whitespace(self) -> None:
         symbols = parse_header_symbols(
             """

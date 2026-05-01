@@ -35,7 +35,7 @@ class WebTests(unittest.TestCase):
                 connection.close()
 
         self.assertEqual(200, status)
-        self.assertIn("<h1>Index</h1>", body)
+        self.assertIn("<h1>Admin</h1>", body)
         self.assertIn("Incremental reindex", body)
         self.assertIn("Full reindex", body)
         self.assertIn("Use last source", body)
@@ -91,6 +91,7 @@ class WebTests(unittest.TestCase):
         self.assertIn('data-recent-title="BView"', body)
         self.assertIn('data-recent-url="/symbol/BView"', body)
         self.assertIn("os/interface/View.h:1", body)
+        self.assertNotIn("/admin/index", body)
 
     def test_web_index_admin_reindexes_source_path(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
