@@ -6,7 +6,7 @@ This document keeps the operational plan separate from the spec/seed.
 
 - [x] Confirm v0 stack: Python 3.10+, SQLite, CLI-first, decoupled UI.
 - [ ] Confirm v0 scope: heuristic parser, incremental index, name search.
-- [ ] Define input policy: installed SDK, full source tree, or both.
+- [x] Define input policy: installed SDK, full source tree, or both.
 - [x] Lock project name and binary names (atlas-indexer, atlas-query).
 
 ## 2. Week 1 - Project Bootstrap
@@ -20,22 +20,22 @@ This document keeps the operational plan separate from the spec/seed.
 
 ## 3. Week 2 - Minimal Functional Indexer
 
-- [ ] Implement header file scanning (.h, .hpp) from a configured path.
-- [ ] Persist file metadata (path, mtime, size, last_indexed_at).
-- [ ] Implement incremental detection (new/changed/deleted/unchanged).
-- [ ] Implement heuristic parser for class, struct, enum.
-- [ ] Store symbols and minimal relations (contains, inherits, defined_in).
-- [ ] Expose atlas-indexer --full and atlas-indexer --incremental.
-- [ ] Validate with test fixtures and readable console dumps.
+- [x] Implement header file scanning (.h, .hpp) from a configured path.
+- [x] Persist file metadata (path, mtime, size, last_indexed_at).
+- [x] Implement incremental detection (new/changed/deleted/unchanged).
+- [x] Implement heuristic parser for class, struct, enum.
+- [x] Store symbols and minimal relations (inherits, defined_in).
+- [x] Expose atlas-indexer --full and atlas-indexer --incremental.
+- [x] Validate with fixtures and readable console dumps.
 
 ## 4. Week 3 - Public Methods and Search
 
 - [ ] Detect public/protected/private sections per class.
 - [ ] Extract simple signatures for public methods and constructors/destructors.
 - [ ] Store methods in symbols and belongs_to_kit/contains relations.
-- [ ] Implement name search (class/method/header) with simple ranking.
-- [ ] Add atlas-query search "BView".
-- [ ] Add atlas-query show "BView" for node detail.
+- [x] Implement name search (class/header) with simple ranking.
+- [x] Add atlas-query search "BView".
+- [x] Add atlas-query show "BView" for node detail.
 
 ## 5. Week 4 - Quality and DX
 
@@ -77,4 +77,3 @@ This document keeps the operational plan separate from the spec/seed.
 - [ ] Examples finder (example_uses_symbol).
 - [ ] Persistent bookmarks and recently viewed nodes.
 - [ ] Alternative provider using Clang or Doxygen.
-

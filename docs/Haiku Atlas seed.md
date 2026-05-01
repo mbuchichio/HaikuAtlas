@@ -2,7 +2,7 @@
 
 ## 0. Idea
 
-Haiku API Atlas is a native app for exploring the Haiku API as a navigable structure, not only as textual documentation.
+Haiku API Atlas is a CLI/index-first tool for exploring the Haiku API as a navigable structure, not only as textual documentation. It builds a local SQLite atlas that can later feed a decoupled UI.
 
 The main unit is not a page, but a node:
 
@@ -16,7 +16,7 @@ The main unit is not a page, but a node:
 - Subsystem
 - Example
 
-The app combines two functions:
+The project combines two functions:
 
 - 70% structural explorer
 - 30% documentation reader
@@ -371,7 +371,7 @@ Later:
 - Doxygen/XML provider
 - prebuilt docs provider
 
-The app should be designed with a provider interface:
+The project should be designed with a provider interface:
 
 ```text
 ISymbolProvider
@@ -450,32 +450,15 @@ Own repository:
 haiku-api-atlas/
   README.md
   src/
-    app/
-      AtlasApp.cpp
-      MainWindow.cpp
-      BrowserPanel.cpp
-      NodeReader.cpp
-
-    index/
-      HeaderScanner.cpp
-      SymbolGraph.cpp
-      IndexStore.cpp
-      FileScanner.cpp
-
-    model/
-      SymbolNode.h
-      Relation.h
-      FileRecord.h
-
-    providers/
-      ISymbolProvider.h
-      HeaderHeuristicProvider.cpp
-
-    ui/
-      KitTreeView.cpp
-      ClassListView.cpp
-      NodeView.cpp
-      SearchBox.cpp
+    haiku_atlas/
+      cli/
+        indexer.py
+        query.py
+      db.py
+      scanner.py
+      parser.py
+      model.py
+      providers.py
 
   data/
     schema.sql
@@ -496,10 +479,9 @@ haiku-api-atlas/
 
 ### 9.1 User Mode
 
-For someone who only wants to use the docs:
+For someone who only wants to inspect the API:
 
-- open app
-- use included or generated index
+- use an included or generated index
 - search class
 - read node
 
@@ -515,7 +497,7 @@ For someone with a local Haiku repo:
 
 ### 9.3 Installed SDK Mode
 
-For an app installed inside Haiku:
+For a tool installed inside Haiku:
 
 - use /boot/system/develop/headers
 - use /boot/system/develop/documentation if it exists
@@ -532,7 +514,7 @@ For contributors:
 
 ### Goal
 
-A native Haiku app that allows users to browse public API classes.
+A CLI-first atlas that indexes public Haiku API classes and exposes them through query commands.
 
 ### Includes
 
@@ -542,7 +524,7 @@ A native Haiku app that allows users to browse public API classes.
 - simple inheritance detection
 - public method detection
 - name search
-- right panel with basic details
+- query output with basic details
 - persistent SQLite cache
 - incremental reindex by mtime/size
 
@@ -557,14 +539,14 @@ A native Haiku app that allows users to browse public API classes.
 
 ### Success Criteria
 
-- open app
+- run atlas-indexer
 - select repo/SDK path
 - index without crashing
 - see Application Kit / Interface Kit
 - open BApplication, BWindow, BView, BMessage
 - see main methods
 - search by name
-- close/reopen instantly using cache
+- rerun queries instantly using cache
 
 ## 11. v1
 
@@ -718,17 +700,16 @@ Then:
 - source links
 - graphs
 
-### 16.2 Native-First
+### 16.2 CLI-First, UI-Later
 
-Ideally a native Haiku app:
+Start with a portable CLI and SQLite index:
 
-- BApplication
-- BWindow
-- BView / BColumnListView
-- BStringView
-- BTextView
+- Python 3.10+
+- SQLite
+- atlas-indexer
+- atlas-query
 
-But the indexer should also be usable as a CLI.
+The UI stays decoupled. It can later become a TUI, a local web UI, or a native Haiku UI without forcing a rewrite of the indexer.
 
 ### 16.3 Separate Indexer and UI
 
@@ -736,13 +717,13 @@ But the indexer should also be usable as a CLI.
 atlas-indexer
   -> generates api-index.sqlite
 
-atlas
+atlas-query / future UI
   -> consumes api-index.sqlite
 ```
 
 This makes it possible to debug the parser without opening the UI.
 
-## 17. CLI Companion
+## 17. CLI Surface
 
 ### atlas-indexer
 
@@ -767,14 +748,14 @@ Options:
 - --dump-kits
 - --verbose
 
-### atlas
+### atlas-query
 
 Usage:
 
 ```bash
-atlas
-atlas --index api-index.sqlite
-atlas --source ~/haiku
+atlas-query --db api-index.sqlite search BView
+atlas-query --db api-index.sqlite show BView
+atlas-query --db api-index.sqlite dump-symbols
 ```
 
 ## 18. First Canonical Nodes to Test
@@ -849,7 +830,7 @@ Related:
 
 - Should the index include private headers?
 - Should it point to the full source tree or only to the installed SDK?
-- Is it better to build a native app from day one or start CLI-first?
+- Which UI should consume the SQLite index first: TUI, local web, or native Haiku?
 - SQLite or JSON for v0?
 - Should existing docs be integrated, or only structure?
 - Final name: Haiku Atlas, API Atlas, BeMap, ClassTracker
@@ -864,14 +845,14 @@ Related:
 - write SQLite/JSON
 - CLI dump
 
-### Week 2 - Minimal UI
+### Week 2 - Minimal Query Layer
 
-- BApplication
-- MainWindow
-- Browser tree
-- Node reader text
+- atlas-query search
+- atlas-query show
+- dump symbols
+- dump kits
 - load index
-- click class -> show details
+- class name -> show details
 
 ### Week 3 - Methods + Search
 
@@ -903,4 +884,3 @@ My vote: Haiku Atlas.
 Because it does not promise perfect documentation. It promises something more interesting:
 
 > cartography of the system.
-

@@ -33,13 +33,17 @@ python -m pip install -e .
 
 - `atlas-indexer --full PATH`
 - `atlas-indexer --incremental PATH`
+- `atlas-indexer --sdk /boot/system/develop/headers`
+- `atlas-indexer --haiku-source /boot/home/haiku`
 - `atlas-query search NAME`
 - `atlas-query show NAME`
 - `atlas-query dump-symbols`
 - `atlas-query dump-kits`
 
-The indexer and query commands currently initialize the database and expose the
-CLI shape. Header scanning and search implementation come next.
+The indexer currently scans `.h` and `.hpp` files, stores file metadata,
+detects new, changed, deleted, and unchanged files, and extracts simple
+class/struct/enum symbols. The query CLI can search symbols and show basic
+symbol details.
 
 ## Project Notes
 

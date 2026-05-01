@@ -7,6 +7,7 @@ import sqlite3
 from pathlib import Path
 
 from haiku_atlas.db import DEFAULT_DB_PATH, initialize_database
+from haiku_atlas.query import get_symbol_detail, search_symbols
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -37,11 +38,38 @@ def main(argv: list[str] | None = None) -> int:
     initialize_database(args.db)
 
     if args.command == "search":
-        print(f"atlas-query: search is not implemented yet for {args.term!r}")
+        with sqlite3.connect(args.db) as connection:
+            results = search_symbols(connection, args.term)
+        for result in results:
+            location = ""
+            if result.file_path:
+                location = f"\t{result.file_path}"
+                if result.line_start is not None:
+                    location += f":{result.line_start}"
+            print(f"{result.kind}\t{result.qualified_name}{location}")
         return 0
 
     if args.command == "show":
-        print(f"atlas-query: show is not implemented yet for {args.name!r}")
+        with sqlite3.connect(args.db) as connection:
+            detail = get_symbol_detail(connection, args.name)
+        if detail is None:
+            print(f"atlas-query: symbol not found: {args.name}")
+            return 1
+
+        print(detail.display_name)
+        print(f"Kind: {detail.kind}")
+        print(f"Qualified: {detail.qualified_name}")
+        if detail.file_path:
+            location = detail.file_path
+            if detail.line_start is not None:
+                location += f":{detail.line_start}"
+            print(f"Header: {location}")
+        if detail.raw_declaration:
+            print(f"Declaration: {detail.raw_declaration}")
+        if detail.relations:
+            print("Relations:")
+            for relation_type, target in detail.relations:
+                print(f"  {relation_type}: {target}")
         return 0
 
     if args.command == "dump-symbols":

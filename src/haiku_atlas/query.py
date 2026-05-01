@@ -1,0 +1,116 @@
+"""Read-side queries for a Haiku Atlas SQLite index."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+import sqlite3
+
+
+@dataclass(frozen=True)
+class SearchResult:
+    kind: str
+    qualified_name: str
+    file_path: str | None
+    line_start: int | None
+
+
+@dataclass(frozen=True)
+class SymbolDetail:
+    kind: str
+    name: str
+    qualified_name: str
+    display_name: str
+    file_path: str | None
+    line_start: int | None
+    line_end: int | None
+    raw_declaration: str | None
+    relations: tuple[tuple[str, str], ...]
+
+
+def search_symbols(connection: sqlite3.Connection, term: str, *, limit: int = 20) -> list[SearchResult]:
+    """Search symbols by name with exact/prefix/contains ranking."""
+    pattern = f"%{term}%"
+    rows = connection.execute(
+        """
+        SELECT s.kind, s.qualified_name, f.path, s.line_start
+        FROM symbols s
+        LEFT JOIN files f ON f.id = s.file_id
+        WHERE s.name LIKE ? OR s.qualified_name LIKE ?
+        ORDER BY
+            CASE
+                WHEN s.name = ? THEN 0
+                WHEN s.qualified_name = ? THEN 1
+                WHEN s.name LIKE ? THEN 2
+                ELSE 3
+            END,
+            s.qualified_name
+        LIMIT ?
+        """,
+        (pattern, pattern, term, term, f"{term}%", limit),
+    )
+    return [
+        SearchResult(
+            kind=kind,
+            qualified_name=qualified_name,
+            file_path=file_path,
+            line_start=line_start,
+        )
+        for kind, qualified_name, file_path, line_start in rows
+    ]
+
+
+def get_symbol_detail(connection: sqlite3.Connection, name: str) -> SymbolDetail | None:
+    """Return one symbol by exact name or qualified name."""
+    row = connection.execute(
+        """
+        SELECT
+            s.id,
+            s.kind,
+            s.name,
+            s.qualified_name,
+            s.display_name,
+            f.path,
+            s.line_start,
+            s.line_end,
+            s.raw_declaration
+        FROM symbols s
+        LEFT JOIN files f ON f.id = s.file_id
+        WHERE s.qualified_name = ? OR s.name = ?
+        ORDER BY
+            CASE
+                WHEN s.qualified_name = ? THEN 0
+                ELSE 1
+            END,
+            s.qualified_name
+        LIMIT 1
+        """,
+        (name, name, name),
+    ).fetchone()
+    if row is None:
+        return None
+
+    symbol_id, kind, symbol_name, qualified_name, display_name, file_path, line_start, line_end, raw = row
+    relation_rows = connection.execute(
+        """
+        SELECT relation_type, COALESCE(target_text, target.qualified_name)
+        FROM relations
+        LEFT JOIN symbols target ON target.id = relations.target_symbol_id
+        WHERE source_symbol_id = ?
+        ORDER BY relation_type, target_text
+        """,
+        (symbol_id,),
+    ).fetchall()
+    relations = tuple((relation_type, target or "") for relation_type, target in relation_rows)
+
+    return SymbolDetail(
+        kind=kind,
+        name=symbol_name,
+        qualified_name=qualified_name,
+        display_name=display_name,
+        file_path=file_path,
+        line_start=line_start,
+        line_end=line_end,
+        raw_declaration=raw,
+        relations=relations,
+    )
+
