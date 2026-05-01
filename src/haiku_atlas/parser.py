@@ -6,7 +6,9 @@ from dataclasses import dataclass
 import re
 
 TYPE_PATTERN = re.compile(
-    r"^\s*(class|struct)\s+([A-Za-z_]\w*(?:::[A-Za-z_]\w*)*)"
+    r"^\s*(class|struct)\s+"
+    r"(?:(?:[A-Z_]\w*|__declspec\([^)]*\))\s+)*"
+    r"([A-Za-z_]\w*(?:::[A-Za-z_]\w*)*)"
     r"(?:\s*:\s*(?P<bases>[^{;]+))?\s*(?P<body>[{;]?)"
 )
 ENUM_PATTERN = re.compile(
@@ -14,9 +16,18 @@ ENUM_PATTERN = re.compile(
 )
 BASE_PATTERN = re.compile(r"(?:public|protected|private)?\s*([A-Za-z_]\w*(?:::[A-Za-z_]\w*)*)")
 ACCESS_PATTERN = re.compile(r"^\s*(public|protected|private)\s*:\s*$")
+METHOD_START_PATTERN = re.compile(
+    r"^\s*"
+    r"(?:(?:virtual|static|inline|explicit|friend)\s+)*"
+    r"(?:(?:[A-Z_]\w*|__declspec\([^)]*\))\s+)*"
+    r"(?:[A-Za-z_][\w:<>,~*&\s]*?\s+)?"
+    r"~?[A-Za-z_]\w*"
+    r"\s*\("
+)
 METHOD_PATTERN = re.compile(
     r"^\s*"
     r"(?:(?:virtual|static|inline|explicit|friend)\s+)*"
+    r"(?:(?:[A-Z_]\w*|__declspec\([^)]*\))\s+)*"
     r"(?:(?P<return_type>[A-Za-z_][\w:<>,~*&\s]*?)\s+)?"
     r"(?P<name>~?[A-Za-z_]\w*)"
     r"\s*\([^;{}]*\)"
@@ -43,6 +54,8 @@ def parse_header_symbols(source: str) -> list[ParsedSymbol]:
     current_type: ParsedSymbol | None = None
     current_access: str | None = None
     type_brace_depth = 0
+    pending_method_lines: list[str] = []
+    pending_method_start = 0
 
     for line_number, line in enumerate(source.splitlines(), start=1):
         stripped = line.strip()
@@ -52,6 +65,8 @@ def parse_header_symbols(source: str) -> list[ParsedSymbol]:
         if current_type is not None:
             access_match = ACCESS_PATTERN.match(line)
             if access_match:
+                pending_method_lines = []
+                pending_method_start = 0
                 current_access = access_match.group(1)
                 type_brace_depth += _brace_delta(line)
                 if type_brace_depth <= 0:
@@ -60,14 +75,31 @@ def parse_header_symbols(source: str) -> list[ParsedSymbol]:
                 continue
 
             if current_access == "public":
-                method = _parse_method(line, line_number, current_type)
-                if method is not None:
-                    symbols.append(method)
+                if pending_method_lines and _looks_like_method_start(line):
+                    pending_method_lines = []
+                    pending_method_start = 0
+                if not pending_method_lines:
+                    pending_method_start = line_number
+                pending_method_lines.append(line)
+                if _declaration_is_complete(line):
+                    declaration = " ".join(pending_method_lines)
+                    method = _parse_method(
+                        declaration,
+                        pending_method_start,
+                        line_number,
+                        current_type,
+                    )
+                    if method is not None:
+                        symbols.append(method)
+                    pending_method_lines = []
+                    pending_method_start = 0
 
             type_brace_depth += _brace_delta(line)
             if type_brace_depth <= 0:
                 current_type = None
                 current_access = None
+                pending_method_lines = []
+                pending_method_start = 0
             continue
 
         type_match = TYPE_PATTERN.match(line)
@@ -110,7 +142,7 @@ def parse_header_symbols(source: str) -> list[ParsedSymbol]:
 
 
 def _is_definition_or_inherited_declaration(match: re.Match[str]) -> bool:
-    return match.group("body") == "{" or match.group("bases") is not None
+    return match.group("body") == "{"
 
 
 def _parse_bases(raw_bases: str) -> tuple[str, ...]:
@@ -126,9 +158,18 @@ def _brace_delta(line: str) -> int:
     return line.count("{") - line.count("}")
 
 
+def _declaration_is_complete(line: str) -> bool:
+    return ";" in line or "{" in line
+
+
+def _looks_like_method_start(line: str) -> bool:
+    return METHOD_START_PATTERN.match(line) is not None
+
+
 def _parse_method(
     line: str,
-    line_number: int,
+    line_start: int,
+    line_end: int,
     parent: ParsedSymbol,
 ) -> ParsedSymbol | None:
     stripped = line.strip()
@@ -151,8 +192,8 @@ def _parse_method(
         kind=kind,
         name=name,
         qualified_name=f"{parent.qualified_name}::{name}",
-        line_start=line_number,
-        line_end=line_number,
+        line_start=line_start,
+        line_end=line_end,
         raw_declaration=_normalize_declaration(stripped),
         parent_qualified_name=parent.qualified_name,
     )

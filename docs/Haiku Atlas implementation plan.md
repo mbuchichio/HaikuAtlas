@@ -41,10 +41,13 @@ This document keeps the operational plan separate from the spec/seed.
 
 - [x] Add configurable logging (--verbose) for the indexer.
 - [x] Add error handling and soft parser failures (raw declaration).
-- [ ] Cover edge cases: macros, multiline signatures, incomplete headers.
-- [ ] Add regression tests with real Haiku API fixtures.
-- [ ] Measure baseline performance (full and incremental index time).
-- [ ] Define v0 performance acceptance thresholds.
+- [x] Cover edge cases: macros, multiline signatures, incomplete headers.
+  - [x] Multiline public method signatures.
+  - [x] Export/API macros in declarations.
+  - [x] Incomplete/truncated declarations.
+- [x] Add regression tests with real Haiku API fixtures.
+- [x] Measure baseline performance (full and incremental index time).
+- [x] Define v0 performance acceptance thresholds.
 
 ## 6. Week 5 - Minimal Cross-Platform UI
 
@@ -77,3 +80,19 @@ This document keeps the operational plan separate from the spec/seed.
 - [ ] Examples finder (example_uses_symbol).
 - [ ] Persistent bookmarks and recently viewed nodes.
 - [ ] Alternative provider using Clang or Doxygen.
+
+## 10. Performance Baseline
+
+Measured on 2026-05-01 against `/home/mario/Dev/haiku`.
+
+full index          2627 headers    2.86s real
+incremental clean   2627 headers    0.12s real
+single-header edit  2627 headers    0.13s real
+
+## 11. v0 Performance Targets
+
+Measured against current Haiku headers, v0 should stay within:
+
+full index          <= 10s
+incremental clean   <= 1s
+single-header edit  <= 1s

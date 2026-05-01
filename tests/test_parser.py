@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 from haiku_atlas.parser import parse_header_symbols
+
+FIXTURES = Path(__file__).parent / "fixtures" / "real_api"
 
 
 class ParserTests(unittest.TestCase):
@@ -112,10 +115,121 @@ class ParserTests(unittest.TestCase):
 
         self.assertEqual("virtual void Draw(BRect updateRect);", symbols[1].raw_declaration)
 
+    def test_parse_header_symbols_detects_multiline_public_methods(self) -> None:
+        symbols = parse_header_symbols(
+            """
+            class BView {
+            public:
+                virtual status_t Archive(BMessage* archive,
+                    bool deep = true) const;
+            };
+            """
+        )
+
+        self.assertEqual("BView::Archive", symbols[1].qualified_name)
+        self.assertEqual(4, symbols[1].line_start)
+        self.assertEqual(5, symbols[1].line_end)
+        self.assertEqual(
+            "virtual status_t Archive(BMessage* archive, bool deep = true) const;",
+            symbols[1].raw_declaration,
+        )
+
+    def test_parse_header_symbols_handles_api_macros_in_declarations(self) -> None:
+        symbols = parse_header_symbols(
+            """
+            class CPPUNIT_API BTestCase : public CppUnit::TestCase {
+            public:
+                CPPUNIT_API status_t Run();
+                virtual _EXPORT void TearDown();
+            };
+            """
+        )
+
+        self.assertEqual(
+            ["BTestCase", "BTestCase::Run", "BTestCase::TearDown"],
+            [symbol.qualified_name for symbol in symbols],
+        )
+        self.assertEqual(("CppUnit::TestCase",), symbols[0].inherits)
+        self.assertEqual("class CPPUNIT_API BTestCase : public CppUnit::TestCase {", symbols[0].raw_declaration)
+        self.assertEqual("CPPUNIT_API status_t Run();", symbols[1].raw_declaration)
+
+    def test_parse_header_symbols_ignores_truncated_type_declarations(self) -> None:
+        symbols = parse_header_symbols("class Broken : public")
+
+        self.assertEqual([], symbols)
+
+    def test_parse_header_symbols_drops_truncated_public_method_before_next_method(self) -> None:
+        symbols = parse_header_symbols(
+            """
+            class BView {
+            public:
+                virtual status_t Archive(BMessage* archive,
+                virtual void Draw(BRect updateRect);
+            };
+            """
+        )
+
+        self.assertEqual(["BView", "BView::Draw"], [symbol.qualified_name for symbol in symbols])
+
     def test_parse_header_symbols_keeps_space_before_class_body(self) -> None:
         symbols = parse_header_symbols("class BView : public BHandler\t{")
 
         self.assertEqual("class BView : public BHandler {", symbols[0].raw_declaration)
+
+    def test_parse_header_symbols_handles_real_haiku_api_excerpts(self) -> None:
+        cases = {
+            "Application_excerpt.h": [
+                "BApplication",
+                "BApplication::BApplication",
+                "BApplication::~BApplication",
+                "BApplication::Instantiate",
+                "BApplication::Archive",
+                "BApplication::Run",
+                "BApplication::Quit",
+                "BApplication::QuitRequested",
+                "BApplication::MessageReceived",
+            ],
+            "View_excerpt.h": [
+                "BView",
+                "BView::BView",
+                "BView::BView",
+                "BView::~BView",
+                "BView::Instantiate",
+                "BView::Archive",
+                "BView::AttachedToWindow",
+                "BView::Draw",
+                "BView::MouseDown",
+            ],
+            "Window_excerpt.h": [
+                "BWindow",
+                "BWindow::BWindow",
+                "BWindow::~BWindow",
+                "BWindow::Instantiate",
+                "BWindow::Archive",
+                "BWindow::Quit",
+                "BWindow::Close",
+                "BWindow::MessageReceived",
+                "BWindow::FrameResized",
+            ],
+            "Message_excerpt.h": [
+                "BMessage",
+                "BMessage::BMessage",
+                "BMessage::BMessage",
+                "BMessage::BMessage",
+                "BMessage::~BMessage",
+                "BMessage::CountNames",
+                "BMessage::IsEmpty",
+                "BMessage::PrintToStream",
+                "BMessage::FlattenedSize",
+            ],
+        }
+
+        for fixture_name, expected_names in cases.items():
+            with self.subTest(fixture=fixture_name):
+                source = (FIXTURES / fixture_name).read_text(encoding="utf-8")
+                symbols = parse_header_symbols(source)
+
+                self.assertEqual(expected_names, [symbol.qualified_name for symbol in symbols])
 
 
 if __name__ == "__main__":
