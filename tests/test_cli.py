@@ -5,6 +5,7 @@ import unittest
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 from haiku_atlas.cli.indexer import main as indexer_main
 from haiku_atlas.cli.query import main as query_main
@@ -78,6 +79,36 @@ class CliTests(unittest.TestCase):
             self.assertEqual(0, result)
             self.assertIn("no kits indexed", output.getvalue())
             self.assertIn("./atlas-indexer /path/to/haiku", output.getvalue())
+
+    def test_query_web_opens_browser_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            db_path = Path(directory) / "atlas.sqlite3"
+
+            with patch("haiku_atlas.cli.query.serve") as serve:
+                result = query_main(["--db", str(db_path), "web"])
+
+            self.assertEqual(0, result)
+            serve.assert_called_once_with(
+                db_path,
+                host="127.0.0.1",
+                port=8765,
+                open_browser=True,
+            )
+
+    def test_query_web_can_skip_browser_open(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            db_path = Path(directory) / "atlas.sqlite3"
+
+            with patch("haiku_atlas.cli.query.serve") as serve:
+                result = query_main(["--db", str(db_path), "web", "--no-open"])
+
+            self.assertEqual(0, result)
+            serve.assert_called_once_with(
+                db_path,
+                host="127.0.0.1",
+                port=8765,
+                open_browser=False,
+            )
 
     def test_indexer_incremental_scans_source_headers(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

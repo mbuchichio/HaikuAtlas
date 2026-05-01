@@ -8,6 +8,7 @@ Haiku Atlas
     ./atlas status                    show index status
     ./atlas kits                      list kits
     ./atlas kit NAME                  list symbols in one kit
+    ./atlas web                       browse locally
     ./atlas dump-symbols              print all symbols
     ./atlas dump-kits                 print all kits
 
@@ -29,5 +30,6 @@ Linux repo examples
     ./atlas-indexer ~/src/haiku       index headers from a Haiku checkout
     ./atlas search BView              search the indexed API
     ./atlas show BView                show one API node
+    ./atlas web                       open a local browser UI
 
     default database                  db/haiku-atlas.sqlite3

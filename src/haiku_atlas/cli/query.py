@@ -15,6 +15,7 @@ from haiku_atlas.query import (
     list_kits,
     search_symbols,
 )
+from haiku_atlas.web import serve
 
 MAX_METHODS_SHOWN = 40
 MAX_KIT_SYMBOLS_SHOWN = 80
@@ -42,6 +43,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     kit = subparsers.add_parser("kit", help="List top-level symbols in one kit.")
     kit.add_argument("name", help="Kit name, such as interface or 'Interface Kit'.")
+
+    web = subparsers.add_parser("web", help="Start the local web UI.")
+    web.add_argument("--host", default="127.0.0.1", help=argparse.SUPPRESS)
+    web.add_argument("--port", type=int, default=8765, help=argparse.SUPPRESS)
+    web.add_argument("--no-open", action="store_true", help=argparse.SUPPRESS)
 
     subparsers.add_parser("help", help="Print the long Haiku Atlas CLI reference.")
     subparsers.add_parser("dump-symbols", help="Print all indexed symbols.")
@@ -157,6 +163,10 @@ def main(argv: list[str] | None = None) -> int:
             hidden_symbols = kit.top_level_symbol_count - len(symbols)
             if hidden_symbols > 0:
                 print(f"... {hidden_symbols} more")
+        return 0
+
+    if args.command == "web":
+        serve(args.db, host=args.host, port=args.port, open_browser=not args.no_open)
         return 0
 
     if args.command == "dump-symbols":
