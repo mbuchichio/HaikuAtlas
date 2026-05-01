@@ -31,6 +31,12 @@ rebuilds the last indexed source.
     ./atlas show BView      show a symbol in the terminal
     ./atlas web --no-open   run the web UI without opening a browser
 
+## Web index controls
+
+Open `Index` in the web UI to review index status, set a Haiku checkout or
+headers path, and run an incremental or full reindex. `Use last source` rebuilds
+the source path already stored in the SQLite database.
+
 ## Windows
 
 Use the `.bat` wrappers from the repository root:

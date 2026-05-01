@@ -15,6 +15,8 @@ All notable changes to Haiku Atlas are documented here.
   signatures, export macros, and truncated declarations.
 - Added v0 release docs for usage, index format, changelog, and roadmap.
 - Documented cross-platform validation notes for Linux and Windows.
+- Added web index controls for choosing a source path and running incremental or
+  full reindexing from the local UI.
 
 ### Fixed
 

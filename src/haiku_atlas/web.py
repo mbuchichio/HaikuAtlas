@@ -11,6 +11,7 @@ import sqlite3
 import webbrowser
 
 from haiku_atlas.db import initialize_database
+from haiku_atlas.file_index import FileIndexResult, update_file_index
 from haiku_atlas.query import (
     ContainedSymbol,
     KitSymbol,
@@ -50,10 +51,23 @@ def serve(
 def _make_handler(db_path: Path) -> type[BaseHTTPRequestHandler]:
     class AtlasWebHandler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
+            self._handle_request("GET")
+
+        def do_POST(self) -> None:
+            self._handle_request("POST")
+
+        def _handle_request(self, method: str) -> None:
             parsed = urlparse(self.path)
             try:
+                form = _read_form(self) if method == "POST" else {}
                 with closing(sqlite3.connect(db_path)) as connection:
-                    status_code, body = _route(connection, parsed.path, parse_qs(parsed.query))
+                    status_code, body = _route(
+                        connection,
+                        parsed.path,
+                        parse_qs(parsed.query),
+                        method=method,
+                        form=form,
+                    )
             except Exception as error:
                 status_code = 500
                 body = _page("Atlas error", f"<main><h1>Atlas error</h1><pre>{escape(str(error))}</pre></main>")
@@ -76,9 +90,19 @@ def _route(
     connection: sqlite3.Connection,
     path: str,
     query: dict[str, list[str]],
+    *,
+    method: str = "GET",
+    form: dict[str, list[str]] | None = None,
 ) -> tuple[int, str]:
+    if method == "POST":
+        if path == "/admin/index":
+            return _handle_index_post(connection, form or {})
+        return 405, _page("Method not allowed", "<main><h1>Method not allowed</h1></main>")
+
     if path == "/":
         return 200, _render_home(connection)
+    if path == "/admin/index":
+        return 200, _render_index_admin(connection)
     if path == "/search":
         term = query.get("q", [""])[0].strip()
         return 200, _render_search(connection, term)
@@ -115,6 +139,13 @@ def _render_home(connection: sqlite3.Connection) -> str:
       </section>
       <section class="list">
         <section class="group">
+          <h2>Index</h2>
+          <a class="row" href="/admin/index">
+            <span>Index controls</span>
+            <small>{escape(status.source_path or "no source path")}</small>
+          </a>
+        </section>
+        <section class="group">
           <h2>Kits</h2>
           {kit_items}
         </section>
@@ -123,6 +154,125 @@ def _render_home(connection: sqlite3.Connection) -> str:
     </main>
     """
     return _page("Haiku Atlas", body)
+
+
+def _render_index_admin(
+    connection: sqlite3.Connection,
+    *,
+    result: FileIndexResult | None = None,
+    error: str | None = None,
+    indexed_source: Path | None = None,
+    full: bool = False,
+) -> str:
+    status = get_index_status(connection)
+    source_value = str(indexed_source or status.source_path or "")
+    result_block = _index_result_block(result, error, indexed_source, full)
+    body = f"""
+    <main>
+      <section class="toolbar">
+        <div>
+          <a class="crumb" href="/">Atlas</a>
+          <h1>Index</h1>
+          <p>{status.header_count} headers · {status.kit_count} kits · {status.symbol_count} symbols</p>
+        </div>
+        {_search_form()}
+      </section>
+      <section class="detail">
+        <dl>
+          <dt>source</dt><dd>{escape(status.source_path or "not set")}</dd>
+          <dt>indexed</dt><dd>{escape(status.last_indexed_at or "never")}</dd>
+          <dt>headers</dt><dd>{status.header_count}</dd>
+          <dt>kits</dt><dd>{status.kit_count}</dd>
+          <dt>symbols</dt><dd>{status.symbol_count}</dd>
+        </dl>
+      </section>
+      <section class="index-panel">
+        <form class="index-form" action="/admin/index" method="post">
+          <label for="source-path">Source path</label>
+          <input
+            id="source-path"
+            name="source_path"
+            value="{escape(source_value)}"
+            placeholder="Path to Haiku checkout or headers"
+          >
+          <div class="actions">
+            <button type="submit" name="mode" value="incremental">Incremental reindex</button>
+            <button type="submit" name="mode" value="full">Full reindex</button>
+            <button type="submit" name="mode" value="stored">Use last source</button>
+          </div>
+        </form>
+        {result_block}
+      </section>
+    </main>
+    """
+    return _page("Index", body)
+
+
+def _handle_index_post(
+    connection: sqlite3.Connection,
+    form: dict[str, list[str]],
+) -> tuple[int, str]:
+    mode = _form_value(form, "mode", "incremental")
+    source_text = "" if mode == "stored" else _form_value(form, "source_path", "")
+    full = mode == "full"
+
+    try:
+        source = _resolve_index_source(connection, source_text)
+    except ValueError as error:
+        return 400, _render_index_admin(connection, error=str(error))
+
+    with connection:
+        result = update_file_index(connection, source, full=full)
+    return 200, _render_index_admin(
+        connection,
+        result=result,
+        indexed_source=source,
+        full=full,
+    )
+
+
+def _resolve_index_source(connection: sqlite3.Connection, source_text: str) -> Path:
+    source = source_text.strip()
+    if not source:
+        status = get_index_status(connection)
+        source = status.source_path or ""
+    if not source:
+        raise ValueError("No source path set.")
+
+    path = Path(source).expanduser()
+    headers_path = path / "headers"
+    if headers_path.is_dir():
+        path = headers_path
+    if not path.exists():
+        raise ValueError(f"Source path does not exist: {path}")
+    if not path.is_dir():
+        raise ValueError(f"Source path is not a directory: {path}")
+    return path
+
+
+def _index_result_block(
+    result: FileIndexResult | None,
+    error: str | None,
+    source: Path | None,
+    full: bool,
+) -> str:
+    if error:
+        return f'<pre class="index-result error">{escape(error)}</pre>'
+    if result is None:
+        return ""
+
+    mode = "full" if full else "incremental"
+    lines = [
+        f"mode={mode}",
+        f"source={source}",
+        f"scanned={result.scanned}",
+        f"new={len(result.new)} changed={len(result.changed)} "
+        f"deleted={len(result.deleted)} unchanged={len(result.unchanged)}",
+    ]
+    if result.errors:
+        lines.append(f"errors={len(result.errors)}")
+        lines.extend(f"{error.path}: {error.message}" for error in result.errors[:10])
+    return f'<pre class="index-result">{escape(chr(10).join(lines))}</pre>'
 
 
 def _render_search(connection: sqlite3.Connection, term: str) -> str:
@@ -287,6 +437,23 @@ def _search_form(term: str = "") -> str:
     )
 
 
+def _read_form(handler: BaseHTTPRequestHandler) -> dict[str, list[str]]:
+    length = int(handler.headers.get("Content-Length", "0"))
+    body = handler.rfile.read(length).decode("utf-8") if length else ""
+    return parse_qs(body)
+
+
+def _form_value(
+    form: dict[str, list[str]],
+    name: str,
+    default: str = "",
+) -> str:
+    values = form.get(name)
+    if not values:
+        return default
+    return values[0]
+
+
 def _recent_section() -> str:
     return """
       <section class="list recent" data-recent-section hidden>
@@ -396,6 +563,12 @@ def _page(
     }}
     .crumb {{ display: inline-block; margin-bottom: 8px; color: var(--accent); font-weight: 700; }}
     .search {{ display: flex; gap: 8px; min-width: min(440px, 100%); }}
+    label {{
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-weight: 700;
+    }}
     input {{
       width: 100%;
       min-height: 40px;
@@ -416,6 +589,9 @@ def _page(
       font-weight: 700;
     }}
     .list, .detail {{ margin-top: 22px; }}
+    .index-panel {{ margin-top: 22px; max-width: 760px; }}
+    .index-form {{ display: grid; gap: 12px; }}
+    .actions {{ display: flex; flex-wrap: wrap; gap: 8px; }}
     .group + .group {{ margin-top: 30px; }}
     .group h2 {{
       margin-bottom: 10px;
@@ -468,6 +644,7 @@ def _page(
       overflow-wrap: anywhere;
     }}
     .recent .row {{ grid-template-columns: minmax(0, 1fr) auto; }}
+    .index-result.error {{ border-color: #b6463a; color: #8f2e25; }}
     .empty {{ color: var(--muted); }}
     @media (max-width: 720px) {{
       .nav {{ padding: 10px 14px 0; }}
@@ -475,6 +652,7 @@ def _page(
       h1 {{ font-size: 26px; }}
       .toolbar {{ display: block; }}
       .search {{ margin-top: 16px; min-width: 0; }}
+      .actions {{ display: grid; }}
       .row {{ grid-template-columns: 1fr; gap: 2px; }}
       .method-row {{ grid-template-columns: 1fr; gap: 2px; }}
       .group .row, .group .method-row {{ margin-left: 0; }}
@@ -489,6 +667,7 @@ def _page(
   <button type="button" data-back>Back</button>
   <button type="button" data-forward>Forward</button>
   <a href="/">Home</a>
+  <a href="/admin/index">Index</a>
 </nav>
 {body}
 <script>

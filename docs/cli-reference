@@ -4,14 +4,14 @@ Haiku Atlas
     ./atlas-indexer                   rebuild the last indexed source
     ./atlas-indexer --full SOURCE     rebuild the index
 
-    ./atlas                          open the local browser UI
+    ./atlas                          open the local browser UI (default)
     ./atlas setup                    download Haiku, index it, open Atlas
     ./atlas search NAME               find symbols
     ./atlas show NAME                 show one symbol
     ./atlas status                    show index status
     ./atlas kits                      list kits
     ./atlas kit NAME                  list symbols in one kit
-    ./atlas web                       browse locally
+    ./atlas web                       open the local browser UI explicitly
     ./atlas dump-symbols              print all symbols
     ./atlas dump-kits                 print all kits
 
@@ -32,11 +32,11 @@ Linux repo examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ./atlas-indexer ~/src/haiku       index headers from a Haiku checkout
     ./atlas-indexer                   rebuild the same checkout later
-    ./atlas                           open the local browser UI
+    ./atlas                           open the local browser UI (same as ./atlas web)
     ./atlas setup                     clone Haiku into sources/haiku
     ./atlas search BView              search the indexed API
     ./atlas show BView                show one API node
-    ./atlas web                       open a local browser UI
+    ./atlas web                       open the local browser UI explicitly
 
     default database                  db/haiku-atlas.sqlite3
 
@@ -44,5 +44,6 @@ Linux repo examples
 Windows
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     atlas-indexer.bat SOURCE          build/update the index
+    atlas.bat                         open the local browser UI (same as atlas.bat web)
     atlas.bat setup                   clone Haiku into sources\haiku
-    atlas.bat web                     open the local browser UI
+    atlas.bat web                     open the local browser UI explicitly

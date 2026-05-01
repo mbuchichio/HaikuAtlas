@@ -24,6 +24,22 @@ class WebTests(unittest.TestCase):
         self.assertIn("Interface Kit", body)
         self.assertIn("data-recent-section", body)
         self.assertIn("haiku-atlas:recent", body)
+        self.assertIn("/admin/index", body)
+
+    def test_web_index_admin_shows_status_and_controls(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            connection = self._indexed_connection(Path(directory))
+            try:
+                status, body = _route(connection, "/admin/index", {})
+            finally:
+                connection.close()
+
+        self.assertEqual(200, status)
+        self.assertIn("<h1>Index</h1>", body)
+        self.assertIn("Incremental reindex", body)
+        self.assertIn("Full reindex", body)
+        self.assertIn("Use last source", body)
+        self.assertIn("headers", body)
 
     def test_web_search_links_to_symbols(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -75,6 +91,57 @@ class WebTests(unittest.TestCase):
         self.assertIn('data-recent-title="BView"', body)
         self.assertIn('data-recent-url="/symbol/BView"', body)
         self.assertIn("os/interface/View.h:1", body)
+
+    def test_web_index_admin_reindexes_source_path(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "headers"
+            source.mkdir()
+            (source / "Window.h").write_text("class BWindow {};", encoding="utf-8")
+            initialize_database(db_path)
+            connection = sqlite3.connect(db_path)
+            try:
+                status, body = _route(
+                    connection,
+                    "/admin/index",
+                    {},
+                    method="POST",
+                    form={
+                        "source_path": [str(source)],
+                        "mode": ["incremental"],
+                    },
+                )
+                count = connection.execute("SELECT COUNT(*) FROM symbols").fetchone()[0]
+            finally:
+                connection.close()
+
+        self.assertEqual(200, status)
+        self.assertIn("scanned=1", body)
+        self.assertIn("new=1 changed=0 deleted=0 unchanged=0", body)
+        self.assertEqual(1, count)
+
+    def test_web_index_admin_rejects_missing_source_path(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            db_path = Path(directory) / "atlas.sqlite3"
+            initialize_database(db_path)
+            connection = sqlite3.connect(db_path)
+            try:
+                status, body = _route(
+                    connection,
+                    "/admin/index",
+                    {},
+                    method="POST",
+                    form={
+                        "source_path": [str(Path(directory) / "missing")],
+                        "mode": ["incremental"],
+                    },
+                )
+            finally:
+                connection.close()
+
+        self.assertEqual(400, status)
+        self.assertIn("Source path does not exist", body)
 
     def _indexed_connection(self, root: Path) -> sqlite3.Connection:
         db_path = root / "atlas.sqlite3"
