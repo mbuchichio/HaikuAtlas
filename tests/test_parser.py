@@ -100,6 +100,23 @@ class ParserTests(unittest.TestCase):
         self.assertEqual("Private", symbols[0].name)
         self.assertEqual("BView::Private", symbols[0].qualified_name)
 
+    def test_parse_header_symbols_normalizes_method_declaration_whitespace(self) -> None:
+        symbols = parse_header_symbols(
+            """
+            class BView {
+            public:
+                virtual\tvoid\t\t\t\tDraw(BRect updateRect);
+            };
+            """
+        )
+
+        self.assertEqual("virtual void Draw(BRect updateRect);", symbols[1].raw_declaration)
+
+    def test_parse_header_symbols_keeps_space_before_class_body(self) -> None:
+        symbols = parse_header_symbols("class BView : public BHandler\t{")
+
+        self.assertEqual("class BView : public BHandler {", symbols[0].raw_declaration)
+
 
 if __name__ == "__main__":
     unittest.main()

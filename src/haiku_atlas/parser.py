@@ -82,7 +82,7 @@ def parse_header_symbols(source: str) -> list[ParsedSymbol]:
                 qualified_name=qualified_name,
                 line_start=line_number,
                 line_end=line_number,
-                raw_declaration=stripped,
+                raw_declaration=_normalize_declaration(stripped),
                 inherits=bases,
             )
             symbols.append(symbol)
@@ -102,7 +102,7 @@ def parse_header_symbols(source: str) -> list[ParsedSymbol]:
                     qualified_name=name,
                     line_start=line_number,
                     line_end=line_number,
-                    raw_declaration=stripped,
+                    raw_declaration=_normalize_declaration(stripped),
                 )
             )
 
@@ -153,6 +153,13 @@ def _parse_method(
         qualified_name=f"{parent.qualified_name}::{name}",
         line_start=line_number,
         line_end=line_number,
-        raw_declaration=stripped,
+        raw_declaration=_normalize_declaration(stripped),
         parent_qualified_name=parent.qualified_name,
     )
+
+
+def _normalize_declaration(declaration: str) -> str:
+    normalized = " ".join(declaration.strip().split())
+    normalized = re.sub(r"\s+([,;()])", r"\1", normalized)
+    normalized = re.sub(r"([({])\s+", r"\1", normalized)
+    return normalized
