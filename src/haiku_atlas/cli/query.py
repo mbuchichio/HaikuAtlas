@@ -55,7 +55,8 @@ def main(argv: list[str] | None = None) -> int:
                 location = f"\t{result.file_path}"
                 if result.line_start is not None:
                     location += f":{result.line_start}"
-            print(f"{result.kind}\t{result.qualified_name}{location}")
+            kit = f"\t{result.kit_display_name}" if result.kit_display_name else ""
+            print(f"{result.kind}\t{result.qualified_name}{kit}{location}")
         return 0
 
     if args.command == "show":
@@ -70,6 +71,8 @@ def main(argv: list[str] | None = None) -> int:
         print(detail.kind)
         if detail.qualified_name != detail.display_name:
             print(detail.qualified_name)
+        if detail.kit_display_name:
+            print(detail.kit_display_name)
         if detail.file_path:
             location = detail.file_path
             if detail.line_start is not None:

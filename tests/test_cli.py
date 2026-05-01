@@ -171,6 +171,27 @@ class CliTests(unittest.TestCase):
             self.assertEqual(0, result)
             self.assertIn("class\tBView\tView.h:1", output.getvalue())
 
+    def test_query_search_prints_kit_for_matching_symbols(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "headers"
+            (source / "os" / "interface").mkdir(parents=True)
+            (source / "os" / "interface" / "View.h").write_text(
+                "class BView : public BHandler {};",
+                encoding="utf-8",
+            )
+
+            with redirect_stdout(StringIO()):
+                indexer_main(["--db", str(db_path), "--incremental", str(source)])
+
+            output = StringIO()
+            with redirect_stdout(output):
+                result = query_main(["--db", str(db_path), "search", "View"])
+
+            self.assertEqual(0, result)
+            self.assertIn("class\tBView\tInterface Kit\tos/interface/View.h:1", output.getvalue())
+
     def test_query_show_prints_symbol_detail(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -191,6 +212,27 @@ class CliTests(unittest.TestCase):
             self.assertIn("class", output.getvalue())
             self.assertIn("View.h:1", output.getvalue())
             self.assertIn("inherits BHandler", output.getvalue())
+
+    def test_query_show_prints_kit(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "headers"
+            (source / "os" / "interface").mkdir(parents=True)
+            (source / "os" / "interface" / "View.h").write_text(
+                "class BView : public BHandler {};",
+                encoding="utf-8",
+            )
+
+            with redirect_stdout(StringIO()):
+                indexer_main(["--db", str(db_path), "--incremental", str(source)])
+
+            output = StringIO()
+            with redirect_stdout(output):
+                result = query_main(["--db", str(db_path), "show", "BView"])
+
+            self.assertEqual(0, result)
+            self.assertIn("Interface Kit", output.getvalue())
 
     def test_query_search_and_show_include_public_methods(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

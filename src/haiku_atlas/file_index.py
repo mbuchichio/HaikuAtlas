@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import sqlite3
 from pathlib import Path
 
+from haiku_atlas.kits import infer_kit_name, kit_display_name
 from haiku_atlas.parser import ParsedSymbol, parse_header_symbols
 
 HEADER_EXTENSIONS = {".h", ".hpp"}
@@ -66,6 +67,7 @@ def update_file_index(
         connection.execute("DELETE FROM relations")
         connection.execute("DELETE FROM symbols")
         connection.execute("DELETE FROM files")
+        connection.execute("DELETE FROM kits")
 
     existing_rows = connection.execute("SELECT path, mtime, size FROM files").fetchall()
     existing_by_path = {path: (mtime, size) for path, mtime, size in existing_rows}
@@ -109,9 +111,10 @@ def update_file_index(
             continue
 
         _delete_file_symbols(connection, file_id)
+        kit_id = _ensure_kit(connection, infer_kit_name(header.path))
         header_source = (source_root / header.path).read_text(encoding="utf-8", errors="replace")
         for symbol in parse_header_symbols(header_source):
-            _insert_symbol(connection, file_id, header.path, symbol)
+            _insert_symbol(connection, file_id, header.path, symbol, kit_id)
 
     return FileIndexResult(
         scanned=len(headers),
@@ -146,6 +149,7 @@ def _insert_symbol(
     file_id: int,
     file_path: str,
     symbol: ParsedSymbol,
+    kit_id: int | None,
 ) -> None:
     parent_id = None
     if symbol.parent_qualified_name is not None:
@@ -162,9 +166,10 @@ def _insert_symbol(
             line_start,
             line_end,
             parent_id,
+            kit_id,
             raw_declaration
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(qualified_name) DO UPDATE SET
             kind = excluded.kind,
             name = excluded.name,
@@ -173,6 +178,7 @@ def _insert_symbol(
             line_start = excluded.line_start,
             line_end = excluded.line_end,
             parent_id = excluded.parent_id,
+            kit_id = excluded.kit_id,
             raw_declaration = excluded.raw_declaration
         """,
         (
@@ -184,6 +190,7 @@ def _insert_symbol(
             symbol.line_start,
             symbol.line_end,
             parent_id,
+            kit_id,
             symbol.raw_declaration,
         ),
     )
@@ -196,6 +203,25 @@ def _insert_symbol(
         _insert_relation(connection, parent_id, "contains", symbol.qualified_name, symbol_id)
     for base in symbol.inherits:
         _insert_relation(connection, symbol_id, "inherits", base)
+
+
+def _ensure_kit(connection: sqlite3.Connection, name: str | None) -> int | None:
+    if name is None:
+        return None
+
+    connection.execute(
+        """
+        INSERT INTO kits (name, display_name)
+        VALUES (?, ?)
+        ON CONFLICT(name) DO UPDATE SET
+            display_name = excluded.display_name
+        """,
+        (name, kit_display_name(name)),
+    )
+    row = connection.execute("SELECT id FROM kits WHERE name = ?", (name,)).fetchone()
+    if row is None:
+        return None
+    return int(row[0])
 
 
 def _get_symbol_id(connection: sqlite3.Connection, qualified_name: str) -> int | None:

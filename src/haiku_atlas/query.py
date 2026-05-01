@@ -10,6 +10,7 @@ import sqlite3
 class SearchResult:
     kind: str
     qualified_name: str
+    kit_display_name: str | None
     file_path: str | None
     line_start: int | None
 
@@ -20,6 +21,7 @@ class SymbolDetail:
     name: str
     qualified_name: str
     display_name: str
+    kit_display_name: str | None
     file_path: str | None
     line_start: int | None
     line_end: int | None
@@ -40,9 +42,10 @@ def search_symbols(connection: sqlite3.Connection, term: str, *, limit: int = 20
     pattern = f"%{term}%"
     rows = connection.execute(
         """
-        SELECT s.kind, s.qualified_name, f.path, s.line_start
+        SELECT s.kind, s.qualified_name, k.display_name, f.path, s.line_start
         FROM symbols s
         LEFT JOIN files f ON f.id = s.file_id
+        LEFT JOIN kits k ON k.id = s.kit_id
         WHERE s.name LIKE ? OR s.qualified_name LIKE ?
         ORDER BY
             CASE
@@ -60,10 +63,11 @@ def search_symbols(connection: sqlite3.Connection, term: str, *, limit: int = 20
         SearchResult(
             kind=kind,
             qualified_name=qualified_name,
+            kit_display_name=kit_display_name,
             file_path=file_path,
             line_start=line_start,
         )
-        for kind, qualified_name, file_path, line_start in rows
+        for kind, qualified_name, kit_display_name, file_path, line_start in rows
     ]
 
 
@@ -77,12 +81,14 @@ def get_symbol_detail(connection: sqlite3.Connection, name: str) -> SymbolDetail
             s.name,
             s.qualified_name,
             s.display_name,
+            k.display_name,
             f.path,
             s.line_start,
             s.line_end,
             s.raw_declaration
         FROM symbols s
         LEFT JOIN files f ON f.id = s.file_id
+        LEFT JOIN kits k ON k.id = s.kit_id
         WHERE s.qualified_name = ? OR s.name = ?
         ORDER BY
             CASE
@@ -97,7 +103,18 @@ def get_symbol_detail(connection: sqlite3.Connection, name: str) -> SymbolDetail
     if row is None:
         return None
 
-    symbol_id, kind, symbol_name, qualified_name, display_name, file_path, line_start, line_end, raw = row
+    (
+        symbol_id,
+        kind,
+        symbol_name,
+        qualified_name,
+        display_name,
+        kit_display,
+        file_path,
+        line_start,
+        line_end,
+        raw,
+    ) = row
     relation_rows = connection.execute(
         """
         SELECT relation_type, COALESCE(target_text, target.qualified_name)
@@ -115,6 +132,7 @@ def get_symbol_detail(connection: sqlite3.Connection, name: str) -> SymbolDetail
         name=symbol_name,
         qualified_name=qualified_name,
         display_name=display_name,
+        kit_display_name=kit_display,
         file_path=file_path,
         line_start=line_start,
         line_end=line_end,

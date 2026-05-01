@@ -101,6 +101,30 @@ class FileIndexTests(unittest.TestCase):
             self.assertIn(("defined_in", "View.h"), relations)
             self.assertIn(("inherits", "BHandler"), relations)
 
+    def test_update_file_index_assigns_kits_from_header_path(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "source"
+            (source / "os" / "interface").mkdir(parents=True)
+            (source / "os" / "interface" / "View.h").write_text(
+                "class BView : public BHandler {};",
+                encoding="utf-8",
+            )
+
+            initialize_database(db_path)
+            with sqlite3.connect(db_path) as connection:
+                update_file_index(connection, source)
+                rows = connection.execute(
+                    """
+                    SELECT symbols.qualified_name, kits.name, kits.display_name
+                    FROM symbols
+                    JOIN kits ON kits.id = symbols.kit_id
+                    """
+                ).fetchall()
+
+            self.assertEqual([("BView", "interface", "Interface Kit")], rows)
+
     def test_update_file_index_stores_public_methods_as_child_symbols(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -195,6 +219,30 @@ class FileIndexTests(unittest.TestCase):
                 ).fetchone()[0]
 
             self.assertGreater(relations, 0)
+
+    def test_full_reindex_removes_stale_kits(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            db_path = root / "atlas.sqlite3"
+            source = root / "source"
+            (source / "os" / "interface").mkdir(parents=True)
+            (source / "os" / "interface" / "View.h").write_text(
+                "class BView {};",
+                encoding="utf-8",
+            )
+
+            initialize_database(db_path)
+            with sqlite3.connect(db_path) as connection:
+                connection.execute(
+                    "INSERT INTO kits (name, display_name) VALUES ('stale', 'Stale Kit')"
+                )
+                update_file_index(connection, source, full=True)
+                kit_names = [
+                    row[0]
+                    for row in connection.execute("SELECT name FROM kits ORDER BY name")
+                ]
+
+            self.assertEqual(["interface"], kit_names)
 
 
 if __name__ == "__main__":
