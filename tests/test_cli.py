@@ -19,7 +19,7 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(0, result)
         self.assertIn("Haiku Atlas", output.getvalue())
-        self.assertIn("    atlas-indexer SOURCE                  build/update the index", output.getvalue())
+        self.assertIn("    atlas-indexer SOURCE              build/update the index", output.getvalue())
 
     def test_query_help_prints_cli_reference(self) -> None:
         output = StringIO()
@@ -29,7 +29,7 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(0, result)
         self.assertIn("Haiku Atlas", output.getvalue())
-        self.assertIn("    atlas search NAME                     find symbols", output.getvalue())
+        self.assertIn("    atlas search NAME                 find symbols", output.getvalue())
 
     def test_indexer_bootstrap_initializes_database(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -1,30 +1,31 @@
 Haiku Atlas
---------------------------------------------------------------------------
-    atlas-indexer SOURCE                  build/update the index
-    atlas-indexer --full SOURCE           rebuild the index
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    atlas-indexer SOURCE              build/update the index
+    atlas-indexer --full SOURCE       rebuild the index
 
-    atlas search NAME                     find symbols
-    atlas show NAME                       show one symbol
-    atlas dump-symbols                    print all symbols
-    atlas dump-kits                       print all kits
+    atlas search NAME                 find symbols
+    atlas show NAME                   show one symbol
+    atlas dump-symbols                print all symbols
+    atlas dump-kits                   print all kits
 
-    atlas-indexer help                    print this help
-    atlas help                            print this help
+    atlas-indexer help                print this help
+    atlas help                        print this help
 
 
 SOURCE examples
---------------------------------------------------------------------------
-    /boot/system/develop/headers          installed Haiku headers
-    /boot/home/haiku                      Haiku source checkout
-    ~/src/haiku                           Haiku source checkout on Linux
-    ~/src/haiku/headers                   Haiku headers on Linux
-    tests/fixtures/simple_api             test fixture
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    /boot/system/develop/headers      installed Haiku headers
+    /boot/home/haiku                  Haiku source checkout
+    ~/src/haiku                       Haiku source checkout on Linux
+    ~/src/haiku/headers               Haiku headers on Linux
+    tests/fixtures/simple_api         test fixture
 
 
 Linux repo examples
---------------------------------------------------------------------------
-    atlas-indexer ~/src/haiku             index headers from a Haiku checkout
-    atlas search BView                    search the indexed API
-    atlas show BView                      show one API node
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    atlas-indexer ~/src/haiku         index headers from a Haiku checkout
+    atlas search BView                search the indexed API
+    atlas show BView                  show one API node
 
     default database                  db/haiku-atlas.sqlite3
+
