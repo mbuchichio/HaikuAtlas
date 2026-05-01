@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import argparse
 import sqlite3
+import sys
 from pathlib import Path
 
 from haiku_atlas.db import DEFAULT_DB_PATH, initialize_database
+from haiku_atlas.cli.help import read_cli_reference
 from haiku_atlas.file_index import update_file_index
 
 
@@ -52,7 +54,12 @@ def resolve_source_path(args: argparse.Namespace) -> Path | None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    effective_argv = sys.argv[1:] if argv is None else argv
+    if effective_argv == ["help"]:
+        print(read_cli_reference(), end="")
+        return 0
+
+    args = build_parser().parse_args(effective_argv)
     initialize_database(args.db)
 
     mode = "full" if args.full else "incremental" if args.incremental else "bootstrap"

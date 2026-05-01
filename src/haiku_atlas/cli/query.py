@@ -6,6 +6,7 @@ import argparse
 import sqlite3
 from pathlib import Path
 
+from haiku_atlas.cli.help import read_cli_reference
 from haiku_atlas.db import DEFAULT_DB_PATH, initialize_database
 from haiku_atlas.query import get_symbol_detail, search_symbols
 
@@ -27,6 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
     show = subparsers.add_parser("show", help="Show one indexed symbol.")
     show.add_argument("name", help="Symbol name to display.")
 
+    subparsers.add_parser("help", help="Print the long Haiku Atlas CLI reference.")
     subparsers.add_parser("dump-symbols", help="Print all indexed symbols.")
     subparsers.add_parser("dump-kits", help="Print all indexed kits.")
 
@@ -35,6 +37,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+
+    if args.command == "help":
+        print(read_cli_reference(), end="")
+        return 0
+
     initialize_database(args.db)
 
     if args.command == "search":

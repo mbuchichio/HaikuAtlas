@@ -11,6 +11,26 @@ from haiku_atlas.cli.query import main as query_main
 
 
 class CliTests(unittest.TestCase):
+    def test_indexer_help_prints_cli_reference(self) -> None:
+        output = StringIO()
+
+        with redirect_stdout(output):
+            result = indexer_main(["help"])
+
+        self.assertEqual(0, result)
+        self.assertIn("Haiku Atlas CLI Reference", output.getvalue())
+        self.assertIn("atlas-indexer", output.getvalue())
+
+    def test_query_help_prints_cli_reference(self) -> None:
+        output = StringIO()
+
+        with redirect_stdout(output):
+            result = query_main(["help"])
+
+        self.assertEqual(0, result)
+        self.assertIn("Haiku Atlas CLI Reference", output.getvalue())
+        self.assertIn("atlas-query", output.getvalue())
+
     def test_indexer_bootstrap_initializes_database(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             db_path = Path(directory) / "atlas.sqlite3"
